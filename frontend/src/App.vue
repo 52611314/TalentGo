@@ -38,16 +38,16 @@ onMounted(() => store.restore())
       <nav aria-label="主导航">
         <RouterLink to="/" class="nav-item" :class="{ active: route.path === '/' }"><LayoutDashboard :size="19" />工作台</RouterLink>
         <RouterLink to="/profile" class="nav-item" :class="{ active: route.path === '/profile' }"><FileUser :size="19" />训练档案<span class="nav-dot" v-if="!store.profile?.target_role"></span></RouterLink>
-        <button class="nav-item future" disabled><BriefcaseBusiness :size="19" />面试练习<span class="nav-tag">M2</span></button>
-        <button class="nav-item future" disabled><ChartNoAxesCombined :size="19" />成长报告<span class="nav-tag">后续</span></button>
+        <RouterLink to="/practice" class="nav-item" :class="{ active: route.path === '/practice' || route.path.startsWith('/sessions/') }"><BriefcaseBusiness :size="19" />面试练习<span class="nav-tag">Mock</span></RouterLink>
+        <RouterLink to="/history" class="nav-item" :class="{ active: route.path === '/history' }"><ChartNoAxesCombined :size="19" />训练记录</RouterLink>
       </nav>
       <div class="sidebar-note"><div class="note-symbol"><Sparkles :size="18" /></div><strong>把准备，变成底气。</strong><p>从了解自己开始，<br />一步一步，走向理想 Offer。</p><RouterLink to="/profile">完善我的档案 <ArrowUpRight :size="15" /></RouterLink></div>
-      <div class="sidebar-bottom"><span class="stage-dot"></span><span>M1 · 基础架构</span><span class="version">v0.1</span></div>
+      <div class="sidebar-bottom"><span class="stage-dot"></span><span>M2 · 训练闭环</span><span class="version">v0.2</span></div>
     </aside>
     <div class="main-shell">
       <header class="topbar"><div class="breadcrumb">我的空间 <span>/</span> <strong>{{ route.meta.title }}</strong></div><div class="topbar-actions"><a href="http://127.0.0.1:8000/docs" target="_blank" rel="noopener" class="api-link"><Terminal :size="15" /> API 文档 <ArrowUpRight :size="13" /></a><button class="account" @click="dialog = true"><span class="avatar">{{ initial }}</span><span>{{ store.identity?.display_name || '访客空间' }}</span><ChevronDown :size="14" /></button></div></header>
       <main><RouterView @create-identity="dialog = true" /></main>
-      <footer class="page-footer"><span>TalentGo · 为下一次机会，做好准备</span><span>当前为 M1 基础版本 · 尚未接入面试与模型能力</span></footer>
+      <footer class="page-footer"><span>TalentGo · 为下一次机会，做好准备</span><span>当前为 M2 Mock 版本 · 未接入真实模型与能力评分</span></footer>
     </div>
   </div>
   <ElDialog v-model="dialog" title="你的训练身份" width="460px" align-center :close-on-click-modal="false">

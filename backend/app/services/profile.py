@@ -22,7 +22,7 @@ def update_profile(db: Session, user: User, patch: ProfilePatch, key: str) -> di
     digest = hash_secret('PATCH /api/v1/profile\n' + json.dumps(payload, sort_keys=True, ensure_ascii=False))
     key_hash = hash_secret(key)
     # Serializes per-user receipts, including identical concurrent retries.
-    db.execute(select(User.id).where(User.id == user.id).with_for_update())
+    db.execute(select(User.id).where(User.id == user.id).with_for_update(key_share=True))
     receipt = db.scalar(select(IdempotencyReceipt).where(
         IdempotencyReceipt.user_id == user.id, IdempotencyReceipt.key_hash == key_hash))
     if receipt:

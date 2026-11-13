@@ -1,4 +1,6 @@
 import uuid
+import logging
+import traceback
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -12,6 +14,7 @@ from app.api.v1.router import router
 from app.core.config import Settings, get_settings
 from app.core.errors import AppError
 from app.db.session import build_database
+from app.services.operations import OperationRunner
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -20,11 +23,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):
-        yield
-        engine.dispose()
+        runner = OperationRunner(engine, factory, settings.mock_chunk_delay)
+        runner.start()
+        app.state.runner = runner
+        try:
+            yield
+        finally:
+            runner.stop()
+            engine.dispose()
 
-    app = FastAPI(title='TalentGo API', version='0.1.0', lifespan=lifespan,
-                  description='M1: health, anonymous identity and profile. Interview features are not implemented.')
+    app = FastAPI(title='TalentGo API', version='0.2.0', lifespan=lifespan,
+                  description='M2: deterministic Mock interview lifecycle. No real LLM or ability scoring.')
     app.state.settings = settings
     app.state.engine = engine
     app.state.session_factory = factory
@@ -55,7 +64,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return error_response(request, 422, 'VALIDATION_ERROR', '请检查输入内容', {'fields': fields})
 
     @app.exception_handler(SQLAlchemyError)
-    async def database_error(request: Request, _: SQLAlchemyError):
+    async def database_error(request: Request, error: SQLAlchemyError):
+        frames = traceback.extract_tb(error.__traceback__)
+        logging.getLogger(__name__).error('Database failure sqlstate=%s location=%s',
+            getattr(getattr(error, 'orig', None), 'sqlstate', None),
+            [(frame.name, frame.lineno) for frame in frames if '/app/' in frame.filename.replace('\\', '/')])
         return error_response(request, 503, 'DATABASE_UNAVAILABLE', '数据库暂时不可用，请稍后重试')
 
     @app.exception_handler(HTTPException)
@@ -65,8 +78,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app.include_router(router)
     app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins,
-                       allow_methods=['GET', 'POST', 'PATCH', 'OPTIONS'],
-                       allow_headers=['Authorization', 'Content-Type', 'Idempotency-Key'],
+                       allow_methods=['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+                       allow_headers=['Authorization', 'Content-Type', 'Idempotency-Key', 'Last-Event-ID'],
                        expose_headers=['X-Request-ID'])
     return app
 

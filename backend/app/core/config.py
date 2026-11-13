@@ -2,7 +2,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import SecretStr, field_validator
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import make_url
 
@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     test_database_url: SecretStr | None = None
     cors_origins: list[str] = ['http://localhost:5173', 'http://127.0.0.1:5173']
     llm_provider: Literal['mock', 'deepseek'] = 'mock'
+    mock_chunk_delay: float = Field(default=0.04, ge=0, le=0.5)
 
     @field_validator('database_url', 'test_database_url')
     @classmethod

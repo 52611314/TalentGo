@@ -24,7 +24,7 @@ def test_app():
     development = make_url(local.database_url.get_secret_value())
     if not url.database or not url.database.endswith('_test') or url.database == development.database or url.port != 6543:
         pytest.fail('Refusing to run against a non-test database or a port other than 6543')
-    settings = Settings(database_url=SecretStr(raw), app_env='test')
+    settings = Settings(database_url=SecretStr(raw), app_env='test', mock_chunk_delay=0.001)
     app = create_app(settings)
     previous = os.environ.get('DATABASE_URL')
     os.environ['DATABASE_URL'] = raw

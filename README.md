@@ -2,7 +2,7 @@
 
 面向计算机专业学生的软件开发实习与校招训练项目。
 
-**当前完成 M1：可运行基础；完成后停在 M1，M2 尚未开始。**
+**当前完成 M2：固定规则 Mock 面试闭环；停在 M2，M3 尚未开始。**
 
 ## 当前能力
 
@@ -12,7 +12,9 @@
 - 后端身份隔离、乐观锁、幂等回执及并发冲突处理。
 - PostgreSQL **6543**、首个 Alembic 迁移、独立测试库、前后端依赖锁及 Windows 脚本。
 
-面试、模型、评分、长期记忆和成长报告留到后续阶段；界面明确标记尚未开放，不展示虚构训练数据。
+M2 新增配置与必要澄清、正式消息、固定 Mock 提问/追问、提示/跳过、暂停恢复、停止与重试、SSE 事件、训练历史和 Mock 总结。刷新保留正式问答与本机草稿，重复请求不会重复保存答案。
+
+真实模型、四 Skill、能力评分、长期记忆和复练留到 M3/M4。Mock 报告只统计实际完成情况，total_score=null，不展示虚构能力分数。
 
 ## 本地启动
 
@@ -37,6 +39,8 @@
 |---|---|
 | 工作台 | http://127.0.0.1:5173 |
 | 档案 | http://127.0.0.1:5173/profile |
+| 面试配置 | http://127.0.0.1:5173/practice |
+| 训练记录 | http://127.0.0.1:5173/history |
 | API 文档 | http://127.0.0.1:8000/docs |
 | 数据层就绪 | http://127.0.0.1:8000/api/v1/health/ready |
 | PostgreSQL | localhost:6543；开发库 talentgo，测试库 talentgo_test |
@@ -49,15 +53,15 @@ Compose 当前只管理 db，前后端为本机进程；所有服务仅回环地
 ./scripts/check.ps1
 ```
 
-15 项后端测试通过；前端类型检查及生产构建通过；测试库升级—降级—升级与 ORM 差异检查通过；浏览器实际验证创建、保存与刷新。详见 [M1 阶段报告](docs/M1阶段报告.md)。
+35 项后端测试通过（M1 的 15 项与 M2 的 20 项）；类型检查与生产构建通过；M1/M2 迁移往返保留基础数据，空测试库重建和 ORM 差异检查通过。浏览器实际完成两题、提示、固定追问、草稿刷新、总结和历史回顾。详见 [M2 阶段报告](docs/M2阶段报告.md)，历史基线保留在 [M1 阶段报告](docs/M1阶段报告.md)。
 
-![TalentGo M1 工作台](docs/assets/m1-workbench.jpg)
+![TalentGo M2 Mock 总结](docs/assets/m2-report.jpg)
 
 ## 目录与文档
 
 - frontend：Vue 3、TypeScript、Vite、Pinia、Element Plus、Lucide。
 - backend：FastAPI、Pydantic、SQLAlchemy、psycopg。
-- database：Alembic；M1 先建 users、profiles、idempotency_receipts。
+- database：Alembic；M1 基础三表，M2 新增会话/题目/消息/操作/事件/报告六表。
 - scripts：环境、启动、检查、备份；tests：后续对话场景占位。
 - docs：[文档总览](docs/项目文档.md)、[开发计划](docs/项目开发计划.md)、[架构](docs/架构设计.md)、[接口](docs/接口文档.md)、[数据库](docs/数据库设计.md)。
 
