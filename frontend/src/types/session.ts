@@ -44,7 +44,7 @@ export interface QuestionEvaluation {
   question_score: number | null; missing_points: string[]; suggestion: string
   dimensions: Record<string, { score: number | null; reason: string; evidence: { message_id: string; quote: string }[] }>
 }
-export interface SkillTrace { id: string; skill_key: string; skill_version: string; phase: string; status: string; model_name: string; attempt_no: number; error_code: string | null; usage: { input_tokens: number | null; output_tokens: number | null; latency_ms: number | null; attempts: number | null } }
+export interface SkillTrace { id: string; skill_key: string; skill_version: string; phase: string; status: string; model_name: string; attempt_no: number; error_code: string | null; usage: { input_tokens: number | null; output_tokens: number | null; latency_ms: number | null; upstream_first_content_ms?: number | null; attempts: number | null } }
 export interface ModelStatus { default_provider: 'mock' | 'deepseek'; providers: { id: string; available: boolean; model: string | null; description: string }[] }
 export const DIMENSION_LABELS: Record<string, string> = { relevance: '切题程度', accuracy_consistency: '准确与一致性', reasoning: '分析与推理', evidence_detail: '证据与细节', communication: '表达沟通' }
 export const STATUS_LABELS: Record<InterviewSession['status'], string> = {

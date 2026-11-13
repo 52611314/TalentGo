@@ -87,7 +87,8 @@ def test_real_three_modes_four_skills_and_evidence(client, provider, mode):
     headers = identity(client)
     session = real_session(client, headers, mode)
     sid = session['id']
-    assert not session['is_mock'] and session['rubric_version'] == 'rubric-1.0'
+    from app.services.scoring import RUBRIC_VERSION
+    assert not session['is_mock'] and session['rubric_version'] == RUBRIC_VERSION
     action(client, headers, sid, 'start')
     text = '我先解释结论，再用具体项目说明测试边界。'
     answer(client, headers, sid, text)

@@ -27,8 +27,11 @@ class DeepSeekProvider:
         started = time.monotonic()
         tokens_in, tokens_out = 0, 0
         complete_usage = True
+        first_content_ms = None
+        cache_hit, cache_miss, complete_cache = 0, 0, True
         for attempt in range(2):
             request_usage = None
+            request_cache = None
             check()
             if sum(len(m['content']) for m in messages) > self.settings.context_max_characters:
                 raise AppError(422, 'CONTEXT_TOO_LONG', '上下文过长，请缩短输入或新建练习；当前答案未截断评分')
@@ -62,11 +65,18 @@ class DeepSeekProvider:
                                 event = json.loads(data)
                                 choices = event.get('choices', [])
                                 if choices:
-                                    content += choices[0].get('delta', {}).get('content') or ''
+                                    delta = choices[0].get('delta', {}).get('content') or ''
+                                    if delta and first_content_ms is None:
+                                        first_content_ms = int((time.monotonic() - started) * 1000)
+                                    content += delta
                                     finish_reason = choices[0].get('finish_reason') or finish_reason
                                 usage = event.get('usage')
                                 if usage:
                                     request_usage = (int(usage['prompt_tokens']), int(usage['completion_tokens']))
+                                    if any(n<0 for n in request_usage):raise ValueError('Negative usage')
+                                    if usage.get('prompt_cache_hit_tokens') is not None and usage.get('prompt_cache_miss_tokens') is not None:
+                                        hit,miss=int(usage['prompt_cache_hit_tokens']),int(usage['prompt_cache_miss_tokens'])
+                                        if hit>=0 and miss>=0 and hit+miss==request_usage[0]:request_cache=(hit,miss)
                             except (ValueError, TypeError, KeyError, AttributeError, IndexError):
                                 raise AppError(503, 'MODEL_PROTOCOL_ERROR', '模型事件结构不合法') from None
                             if len(content) > 32000:
@@ -81,6 +91,9 @@ class DeepSeekProvider:
                 tokens_out += request_usage[1]
             else:
                 complete_usage = False
+            if request_cache is not None:
+                cache_hit+=request_cache[0];cache_miss+=request_cache[1]
+            else:complete_cache=False
             try:
                 if finish_reason not in {'stop'}:
                     raise ValueError('Output was incomplete or truncated')
@@ -88,7 +101,8 @@ class DeepSeekProvider:
                 if validate:
                     validate(value)
                 return ModelResult(value, tokens_in if complete_usage else None, tokens_out if complete_usage else None,
-                                   int((time.monotonic() - started) * 1000), attempt + 1)
+                                   int((time.monotonic() - started) * 1000), attempt + 1, first_content_ms,
+                                   cache_hit if complete_cache else None,cache_miss if complete_cache else None)
             except (ValidationError, ValueError):
                 if attempt:
                     raise AppError(503, 'MODEL_OUTPUT_INVALID', '模型结果或证据校验失败，已进行一次修复；没有计入成绩') from None

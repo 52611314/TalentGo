@@ -20,53 +20,50 @@ const pendingKey = computed(() => `talentgo.create-session.${identity.activeId}`
 let scope = 0
 const form = reactive({ title: '我的模拟面试', source_task_id: undefined as string | undefined, provider: 'mock' as 'mock' | 'deepseek', role: null as TargetRole | null, mode: null as InterviewMode | null,
   config: { question_count: 3, difficulty: 1, max_followups: 1, pressure_level: 1, pressure_consent: false } })
-watch(() => [identity.activeId, identity.profile, route.query.mode], () => {
-  scope++
-  busy.value = false
-  form.role = identity.profile?.target_role || null
-  const mode = route.query.mode
-  form.mode = mode === 'technical' || mode === 'behavioral' || mode === 'pressure' ? mode : null
-  pending = null
-  uncertain.value = false
-  if (identity.identity) {
-    try {
-      const saved = JSON.parse(sessionStorage.getItem(pendingKey.value) || 'null')
-      if (saved?.key && saved?.body) {
-        pending = saved
-        Object.assign(form, JSON.parse(saved.body))
-        uncertain.value = true
-      }
-    } catch { sessionStorage.removeItem(pendingKey.value) }
-  }
-}, { immediate: true })
+watch([() => identity.activeId, () => route.query.mode, () => route.query.task], async () => {
+  const ticket = ++scope
+  busy.value=false;error.value='';pending=null;uncertain.value=false
+  const selectedMode=route.query.mode
+  Object.assign(form,{title:'我的模拟面试',source_task_id:undefined,
+    provider:models.value?.default_provider||'mock',role:identity.profile?.target_role||null,
+    mode:['technical','behavioral','pressure'].includes(String(selectedMode))?selectedMode:null,
+    config:{question_count:3,difficulty:1,max_followups:1,pressure_level:1,pressure_consent:false}})
+  const token=identity.identity?.token
+  if(!token)return
+  try {
+    const saved=JSON.parse(sessionStorage.getItem(pendingKey.value)||'null')
+    if(saved?.key && saved?.body){
+      const body=JSON.parse(saved.body)
+      pending=saved;Object.assign(form,body);uncertain.value=true
+      return // Recover the original body; task lookup must never rewrite an uncertain submission.
+    }
+  } catch {sessionStorage.removeItem(pendingKey.value)}
+  const task=route.query.task
+  if(typeof task!=='string'||!task)return
+  try {
+    const result=await request<{id:string;role:TargetRole;mode:InterviewMode;topic:string}>(`/practice-tasks/${encodeURIComponent(task)}`,{},token)
+    if(ticket!==scope)return
+    form.source_task_id=result.id;form.role=result.role;form.mode=result.mode;form.provider='deepseek'
+    form.title=`针对复练 · ${result.topic}`;form.config.question_count=1
+  }catch(e){if(ticket===scope)error.value=e instanceof Error?e.message:'读取来源任务失败'}
+},{immediate:true})
+watch(() => identity.profile, profile => {
+  if(!form.role && !pending && !uncertain.value && !route.query.task)form.role=profile?.target_role||null
+})
 watch(() => identity.identity?.token, async token => {
-  models.value = null
-  modelError.value = ''
-  if (!token) return
+  models.value=null;modelError.value=''
+  if(!token)return
   try {
-    const status = await request<ModelStatus>('/models/status', {}, token)
-    if (identity.identity?.token !== token) return
-    models.value = status
-    if (!pending && !form.source_task_id) form.provider = status.default_provider
-  } catch { if (identity.identity?.token === token) modelError.value = '模型状态读取失败，请刷新后选择真实模型。Mock 仍可使用。' }
-}, { immediate: true })
-watch([() => route.query.task, () => identity.identity?.token], async ([task, token]) => {
-  form.source_task_id = undefined
-  if (!task || !token || typeof task !== 'string') return
-  const ticket = scope
-  try {
-    const result = await request<{id:string;role:TargetRole;mode:InterviewMode;topic:string}>(`/practice-tasks/${task}`, {}, token)
-    if (ticket !== scope) return
-    form.source_task_id = result.id
-    form.role = result.role; form.mode = result.mode; form.provider = 'deepseek'
-    form.title = `针对复练 · ${result.topic}`
-    form.config.question_count = 1
-  } catch(e) { if(ticket === scope) error.value = e instanceof Error ? e.message : '读取来源任务失败' }
-}, {immediate:true})
+    const status=await request<ModelStatus>('/models/status',{},token)
+    if(identity.identity?.token!==token)return
+    models.value=status
+    if(!pending && !form.source_task_id)form.provider=status.default_provider
+  }catch{if(identity.identity?.token===token)modelError.value='模型状态读取失败，请刷新后选择真实模型。Mock 仍可使用。'}
+},{immediate:true})
 const needsClarification = computed(() => !form.role || !form.mode)
 async function create() {
   if (!identity.identity || busy.value) return
-  if (route.query.task && !form.source_task_id) { error.value = '来源任务尚未读取成功，请刷新后再创建复练'; return }
+  if (!pending && route.query.task && !form.source_task_id) { error.value = '来源任务尚未读取成功，请刷新后再创建复练'; return }
   busy.value = true
   const ticket = scope
   error.value = ''
@@ -96,7 +93,7 @@ async function create() {
 </script>
 
 <template>
-  <section class="page-heading"><div><div class="eyebrow"><span></span> MAKE ROOM FOR PRACTICE</div><h1>一次练习，从一个小目标开始。</h1><p>选好方向，也可以先留下不确定的地方，让我们一起确认。</p></div><span class="mock-badge"><FlaskConical :size="14" /> M4 · 个性化复练</span></section>
+  <section class="page-heading"><div><div class="eyebrow"><span></span> MAKE ROOM FOR PRACTICE</div><h1>一次练习，从一个小目标开始。</h1><p>选好方向，也可以先留下不确定的地方，让我们一起确认。</p></div><span class="mock-badge"><FlaskConical :size="14" /> M5 · 个性化复练</span></section>
   <section v-if="!identity.identity" class="card empty-profile"><Braces :size="32" /><h2>先为你的练习建立身份</h2><p>面试记录只对当前身份开放，刷新后也可以继续。</p><button class="button primary" @click="$emit('create-identity')">创建训练身份 <ArrowRight :size="16" /></button></section>
   <div v-else class="setup-layout">
     <form class="card profile-form" @submit.prevent="create">

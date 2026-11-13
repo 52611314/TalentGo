@@ -1,0 +1,670 @@
+{
+  "suite": "m5-engineering",
+  "provider": "deterministic_fixture_not_live",
+  "generated_at": "2026-11-13T13:18:52.579303+00:00",
+  "api": "0.5.0",
+  "prompt": "prompt-1.2",
+  "rubric": "rubric-1.1",
+  "catalog_count": 30,
+  "executed": 30,
+  "cases": [
+    {
+      "id": "H01",
+      "group": "behavioral",
+      "title": "STAR 完整且不核实真实性",
+      "status": "passed",
+      "branches": [],
+      "actual": {
+        "total_score": 80.0,
+        "coverage": {
+          "asked": 1,
+          "scored": 1,
+          "planned": 1,
+          "skipped": 0,
+          "answered": 1,
+          "not_reached": 0
+        },
+        "followups": 0,
+        "hint_used": false,
+        "timings": {
+          "scope": "operation_lifetime_including_retries",
+          "first_event_ms": 25,
+          "first_visible_text_ms": 127,
+          "completion_ms": null
+        }
+      },
+      "elapsed_ms": 562
+    },
+    {
+      "id": "H02",
+      "group": "behavioral",
+      "title": "缺个人行动则追问",
+      "status": "passed",
+      "branches": [],
+      "actual": {
+        "total_score": 80.0,
+        "coverage": {
+          "asked": 1,
+          "scored": 1,
+          "planned": 1,
+          "skipped": 0,
+          "answered": 1,
+          "not_reached": 0
+        },
+        "followups": 1,
+        "hint_used": false,
+        "timings": {
+          "scope": "operation_lifetime_including_retries",
+          "first_event_ms": 24,
+          "first_visible_text_ms": 114,
+          "completion_ms": null
+        }
+      },
+      "elapsed_ms": 721
+    },
+    {
+      "id": "H03",
+      "group": "behavioral",
+      "title": "缺结果允许如实补充不能量化",
+      "status": "passed",
+      "branches": [],
+      "actual": {
+        "total_score": 60.0,
+        "coverage": {
+          "asked": 1,
+          "scored": 1,
+          "planned": 1,
+          "skipped": 0,
+          "answered": 1,
+          "not_reached": 0
+        },
+        "followups": 1,
+        "hint_used": false,
+        "timings": {
+          "scope": "operation_lifetime_including_retries",
+          "first_event_ms": 23,
+          "first_visible_text_ms": 114,
+          "completion_ms": null
+        }
+      },
+      "elapsed_ms": 658
+    },
+    {
+      "id": "H04",
+      "group": "behavioral",
+      "title": "团队贡献与个人贡献分开",
+      "status": "passed",
+      "branches": [],
+      "actual": {
+        "total_score": 60.0,
+        "coverage": {
+          "asked": 1,
+          "scored": 1,
+          "planned": 1,
+          "skipped": 0,
+          "answered": 1,
+          "not_reached": 0
+        },
+        "followups": 1,
+        "hint_used": false,
+        "timings": {
+          "scope": "operation_lifetime_including_retries",
+          "first_event_ms": 21,
+          "first_visible_text_ms": 102,
+          "completion_ms": null
+        }
+      },
+      "elapsed_ms": 624
+    },
+    {
+      "id": "H05",
+      "group": "behavioral",
+      "title": "矛盾陈述需要澄清",
+      "status": "passed",
+      "branches": [],
+      "actual": {
+        "total_score": 60.0,
+        "coverage": {
+          "asked": 1,
+          "scored": 1,
+          "planned": 1,
+          "skipped": 0,
+          "answered": 1,
+          "not_reached": 0
+        },
+        "followups": 1,
+        "hint_used": false,
+        "timings": {
+          "scope": "operation_lifetime_including_retries",
+          "first_event_ms": 30,
+          "first_visible_text_ms": 224,
+          "completion_ms": null
+        }
+      },
+      "elapsed_ms": 775
+    },
+    {
+      "id": "H06",
+      "group": "behavioral",
+      "title": "没有实习也可使用课程案例",
+      "status": "passed",
+      "branches": [],
+      "actual": {
+        "total_score": 60.0,
+        "coverage": {
+          "asked": 1,
+          "scored": 1,
+          "planned": 1,
+          "skipped": 0,
+          "answered": 1,
+          "not_reached": 0
+        },
+        "followups": 0,
+        "hint_used": false,
+        "timings": {
+          "scope": "operation_lifetime_including_retries",
+          "first_event_ms": 19,
+          "first_visible_text_ms": 120,
+          "completion_ms": null
+        }
+      },
+      "elapsed_ms": 473
+    },
+    {
+      "id": "E01",
+      "group": "boundary",
+      "title": "超时/限额失败保留输入并显式重试",
+      "status": "passed",
+      "branches": [
+        {
+          "name": "timeout_retry",
+          "status": "passed"
+        },
+        {
+          "name": "rate_retry",
+          "status": "passed"
+        }
+      ],
+      "elapsed_ms": 1080
+    },
+    {
+      "id": "E02",
+      "group": "boundary",
+      "title": "畸形输出/断流/跨题引用不计分",
+      "status": "passed",
+      "branches": [
+        {
+          "name": "bad_json",
+          "status": "passed"
+        },
+        {
+          "name": "stream_disconnect",
+          "status": "passed"
+        },
+        {
+          "name": "foreign_quote",
+          "status": "passed"
+        }
+      ],
+      "elapsed_ms": 1111
+    },
+    {
+      "id": "E03",
+      "group": "boundary",
+      "title": "取消/断线事件补发不重新发答案",
+      "status": "passed",
+      "branches": [
+        {
+          "name": "cancel",
+          "status": "passed"
+        },
+        {
+          "name": "sse_replay",
+          "status": "passed"
+        }
+      ],
+      "elapsed_ms": 410
+    },
+    {
+      "id": "E04",
+      "group": "boundary",
+      "title": "同键重放/异键并发/进程中断恢复",
+      "status": "passed",
+      "branches": [
+        {
+          "name": "idempotency",
+          "status": "passed"
+        },
+        {
+          "name": "concurrency",
+          "status": "passed"
+        },
+        {
+          "name": "process_recovery",
+          "status": "passed"
+        }
+      ],
+      "elapsed_ms": 1016
+    },
+    {
+      "id": "M01",
+      "group": "memory_clarification",
+      "title": "目标模糊时主动澄清",
+      "status": "passed",
+      "branches": [
+        {
+          "name": "clarification",
+          "status": "passed"
+        }
+      ],
+      "elapsed_ms": 217
+    },
+    {
+      "id": "M02",
+      "group": "memory_clarification",
+      "title": "已知目标不重复澄清",
+      "status": "passed",
+      "branches": [
+        {
+          "name": "known_goal",
+          "status": "passed"
+        }
+      ],
+      "elapsed_ms": 231
+    },
+    {
+      "id": "M03",
+      "group": "memory_clarification",
+      "title": "跨会话确认记忆与注入轨迹",
+      "status": "passed",
+      "branches": [
+        {
+          "name": "memory_across",
+          "status": "passed"
+        }
+      ],
+      "elapsed_ms": 742
+    },
+    {
+      "id": "M04",
+      "group": "memory_clarification",
+      "title": "纠正记忆丢弃运行中旧结果",
+      "status": "passed",
+      "branches": [
+        {
+          "name": "memory_correct",
+          "status": "passed"
+        }
+      ],
+      "elapsed_ms": 352
+    },
+    {
+      "id": "M05",
+      "group": "memory_clarification",
+      "title": "删除记忆失效摘要且不回流",
+      "status": "passed",
+      "branches": [
+        {
+          "name": "memory_delete",
+          "status": "passed"
+        }
+      ],
+      "elapsed_ms": 581
+    },
+    {
+      "id": "M06",
+      "group": "memory_clarification",
+      "title": "未开启推断不自动写入",
+      "status": "passed",
+      "branches": [
+        {
+          "name": "inference_off",
+          "status": "passed"
+        }
+      ],
+      "elapsed_ms": 455
+    },
+    {
+      "id": "M07",
+      "group": "memory_clarification",
+      "title": "开启后仍须确认且关闭后停用",
+      "status": "passed",
+      "branches": [
+        {
+          "name": "inference_confirm",
+          "status": "passed"
+        }
+      ],
+      "elapsed_ms": 949
+    },
+    {
+      "id": "M08",
+      "group": "memory_clarification",
+      "title": "长历史裁剪保留当前题与证据",
+      "status": "passed",
+      "branches": [
+        {
+          "name": "long_context",
+          "status": "passed"
+        }
+      ],
+      "elapsed_ms": 0
+    },
+    {
+      "id": "P01",
+      "group": "pressure",
+      "title": "未同意压力不能开始",
+      "status": "passed",
+      "branches": [
+        {
+          "name": "pressure_consent",
+          "status": "passed"
+        }
+      ],
+      "elapsed_ms": 209
+    },
+    {
+      "id": "P02",
+      "group": "pressure",
+      "title": "降低强度后续调用采用新值",
+      "status": "passed",
+      "branches": [],
+      "actual": {
+        "total_score": 80.0,
+        "coverage": {
+          "asked": 1,
+          "scored": 1,
+          "planned": 1,
+          "skipped": 0,
+          "answered": 1,
+          "not_reached": 0
+        },
+        "followups": 0,
+        "hint_used": false,
+        "timings": {
+          "scope": "operation_lifetime_including_retries",
+          "first_event_ms": 23,
+          "first_visible_text_ms": 120,
+          "completion_ms": 1485
+        }
+      },
+      "elapsed_ms": 518
+    },
+    {
+      "id": "P03",
+      "group": "pressure",
+      "title": "暂停恢复保留问题",
+      "status": "passed",
+      "branches": [],
+      "actual": {
+        "total_score": 60.0,
+        "coverage": {
+          "asked": 1,
+          "scored": 1,
+          "planned": 1,
+          "skipped": 0,
+          "answered": 1,
+          "not_reached": 0
+        },
+        "followups": 0,
+        "hint_used": false,
+        "timings": {
+          "scope": "operation_lifetime_including_retries",
+          "first_event_ms": 24,
+          "first_visible_text_ms": 110,
+          "completion_ms": 1411
+        }
+      },
+      "elapsed_ms": 541
+    },
+    {
+      "id": "P04",
+      "group": "pressure",
+      "title": "提前结束缓存评价并披露覆盖",
+      "status": "passed",
+      "branches": [],
+      "actual": {
+        "total_score": 40.0,
+        "coverage": {
+          "asked": 1,
+          "scored": 1,
+          "planned": 3,
+          "skipped": 0,
+          "answered": 1,
+          "not_reached": 2
+        },
+        "followups": 1,
+        "hint_used": false,
+        "timings": {
+          "scope": "operation_lifetime_including_retries",
+          "first_event_ms": 17,
+          "first_visible_text_ms": 72,
+          "completion_ms": 1318
+        }
+      },
+      "elapsed_ms": 578
+    },
+    {
+      "id": "T01",
+      "group": "technical",
+      "title": "正确流程与边界",
+      "status": "passed",
+      "branches": [],
+      "actual": {
+        "total_score": 80.0,
+        "coverage": {
+          "asked": 1,
+          "scored": 1,
+          "planned": 1,
+          "skipped": 0,
+          "answered": 1,
+          "not_reached": 0
+        },
+        "followups": 0,
+        "hint_used": false,
+        "timings": {
+          "scope": "operation_lifetime_including_retries",
+          "first_event_ms": 23,
+          "first_visible_text_ms": 115,
+          "completion_ms": 1318
+        }
+      },
+      "elapsed_ms": 504
+    },
+    {
+      "id": "T02",
+      "group": "technical",
+      "title": "关键错误后纠正",
+      "status": "passed",
+      "branches": [],
+      "actual": {
+        "total_score": 80.0,
+        "coverage": {
+          "asked": 1,
+          "scored": 1,
+          "planned": 1,
+          "skipped": 0,
+          "answered": 1,
+          "not_reached": 0
+        },
+        "followups": 1,
+        "hint_used": false,
+        "timings": {
+          "scope": "operation_lifetime_including_retries",
+          "first_event_ms": 31,
+          "first_visible_text_ms": 144,
+          "completion_ms": 1262
+        }
+      },
+      "elapsed_ms": 730
+    },
+    {
+      "id": "T03",
+      "group": "technical",
+      "title": "模糊回答后补充",
+      "status": "passed",
+      "branches": [],
+      "actual": {
+        "total_score": 60.0,
+        "coverage": {
+          "asked": 1,
+          "scored": 1,
+          "planned": 1,
+          "skipped": 0,
+          "answered": 1,
+          "not_reached": 0
+        },
+        "followups": 1,
+        "hint_used": false,
+        "timings": {
+          "scope": "operation_lifetime_including_retries",
+          "first_event_ms": 26,
+          "first_visible_text_ms": 125,
+          "completion_ms": 1168
+        }
+      },
+      "elapsed_ms": 764
+    },
+    {
+      "id": "T04",
+      "group": "technical",
+      "title": "不会时一次提示且缺失不强制补分",
+      "status": "passed",
+      "branches": [],
+      "actual": {
+        "total_score": null,
+        "coverage": {
+          "asked": 1,
+          "scored": 0,
+          "planned": 1,
+          "skipped": 0,
+          "answered": 1,
+          "not_reached": 0
+        },
+        "followups": 1,
+        "hint_used": true,
+        "timings": {
+          "scope": "operation_lifetime_including_retries",
+          "first_event_ms": 22,
+          "first_visible_text_ms": 120,
+          "completion_ms": 1067
+        }
+      },
+      "elapsed_ms": 745
+    },
+    {
+      "id": "T05",
+      "group": "technical",
+      "title": "跑题后拉回本题",
+      "status": "passed",
+      "branches": [],
+      "actual": {
+        "total_score": 60.0,
+        "coverage": {
+          "asked": 1,
+          "scored": 1,
+          "planned": 1,
+          "skipped": 0,
+          "answered": 1,
+          "not_reached": 0
+        },
+        "followups": 1,
+        "hint_used": false,
+        "timings": {
+          "scope": "operation_lifetime_including_retries",
+          "first_event_ms": 20,
+          "first_visible_text_ms": 110,
+          "completion_ms": 984
+        }
+      },
+      "elapsed_ms": 633
+    },
+    {
+      "id": "T06",
+      "group": "technical",
+      "title": "后端事务题的手动提示与标记",
+      "status": "passed",
+      "branches": [],
+      "actual": {
+        "total_score": 60.0,
+        "coverage": {
+          "asked": 1,
+          "scored": 1,
+          "planned": 1,
+          "skipped": 0,
+          "answered": 1,
+          "not_reached": 0
+        },
+        "followups": 0,
+        "hint_used": true,
+        "timings": {
+          "scope": "operation_lifetime_including_retries",
+          "first_event_ms": 19,
+          "first_visible_text_ms": 116,
+          "completion_ms": 915
+        }
+      },
+      "elapsed_ms": 677
+    },
+    {
+      "id": "T07",
+      "group": "technical",
+      "title": "跳过不计零分",
+      "status": "passed",
+      "branches": [],
+      "actual": {
+        "total_score": null,
+        "coverage": {
+          "asked": 1,
+          "scored": 0,
+          "planned": 1,
+          "skipped": 1,
+          "answered": 0,
+          "not_reached": 0
+        },
+        "followups": 0,
+        "hint_used": false,
+        "timings": {
+          "scope": "operation_lifetime_including_retries",
+          "first_event_ms": 16,
+          "first_visible_text_ms": 43,
+          "completion_ms": 795
+        }
+      },
+      "elapsed_ms": 419
+    },
+    {
+      "id": "T08",
+      "group": "technical",
+      "title": "满分注入不改权重或引文规则",
+      "status": "passed",
+      "branches": [],
+      "actual": {
+        "total_score": 20.0,
+        "coverage": {
+          "asked": 1,
+          "scored": 1,
+          "planned": 1,
+          "skipped": 0,
+          "answered": 1,
+          "not_reached": 0
+        },
+        "followups": 0,
+        "hint_used": false,
+        "timings": {
+          "scope": "operation_lifetime_including_retries",
+          "first_event_ms": 25,
+          "first_visible_text_ms": 125,
+          "completion_ms": 828
+        }
+      },
+      "elapsed_ms": 485
+    }
+  ],
+  "source_digest": {
+    "algorithm": "sha256",
+    "value": "45e64f0fb1abde52e6f105c4a0b09c901079d83ed2db4fb633ddfd5d8d7f1783",
+    "base_commit": "455ed64dd18992159d4c5d30b1d840b71aa26df1",
+    "includes": "backend app py/prompts/knowledge and frontend src ts/vue/css, scenarios, normalized LF; before M5 commit"
+  }
+}

@@ -11,7 +11,7 @@ MIGRATION_HEAD = '0004_m4_memory'
 
 @router.get('/live')
 def live(request: Request):
-    return response(request, {'status': 'ok', 'app': 'TalentGo', 'milestone': 'M4', 'version': '0.4.0'})
+    return response(request, {'status': 'ok', 'app': 'TalentGo', 'milestone': 'M5', 'version': '0.5.0'})
 
 
 @router.get('/ready')
@@ -24,4 +24,4 @@ def ready(db: DB, request: Request):
     if versions != [MIGRATION_HEAD]:
         raise AppError(503, 'SCHEMA_NOT_READY', '数据库迁移版本与应用不一致')
     return response(request, {'status': 'ready', 'database': 'PostgreSQL', 'port': 6543,
-                             'schema_revision': MIGRATION_HEAD, 'milestone': 'M4'})
+                             'schema_revision': MIGRATION_HEAD, 'milestone': 'M5'})

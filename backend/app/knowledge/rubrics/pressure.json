@@ -1,5 +1,5 @@
 {
-  "version": "rubric-1.0",
+  "version": "rubric-1.1",
   "weights": {
     "relevance": 20,
     "accuracy_consistency": 20,

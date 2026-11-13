@@ -42,6 +42,17 @@ def test_stream_request_and_usage_ignore_reasoning():
     assert result.value.hint == '先说明事务的原子性。'
     assert result.input_tokens == 11 and result.output_tokens == 7 and result.attempts == 1
     assert 'INTERNAL' not in result.value.model_dump_json()
+    assert result.first_content_ms is not None and 0<=result.first_content_ms<=result.latency_ms
+    assert result.input_cache_hit_tokens is None and result.input_cache_miss_tokens is None
+
+
+def test_cache_usage_preserved_only_when_complete():
+    def handler(_):
+        events=[{'choices':[{'delta':{'content':'{"hint":"先说明一个事务例子。"}'},'finish_reason':'stop'}]},
+                {'choices':[],'usage':{'prompt_tokens':11,'completion_tokens':7,'prompt_cache_hit_tokens':8,'prompt_cache_miss_tokens':3}}]
+        return httpx.Response(200,headers={'content-type':'text/event-stream'},content=''.join('data: '+json.dumps(e,ensure_ascii=False)+'\n\n' for e in events).encode())
+    result=invoke(handler)
+    assert result.input_cache_hit_tokens==8 and result.input_cache_miss_tokens==3
 
 
 @pytest.mark.parametrize('status,code', [(401, 'MODEL_AUTH_FAILED'), (402, 'MODEL_BALANCE_REQUIRED'),

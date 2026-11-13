@@ -35,3 +35,6 @@
 .session-controls>button:not(.button){color:#80658f}.history-item p,.history-meta small,.report-summary p,.coverage-grid span{color:#8b7399}
 .report-summary h2,.coverage-grid strong,.transcript-item>p,.transcript-item.user>p{color:#785b8b}.transcript-item>span{color:#967ca7}
 .operation-warning>strong,.operation-warning>p{color:#977b52}.conversation-message.system>p{color:#9c8aab}
+
+/* M5: export actions and trace references fit resizable PC windows. */
+.report-actions{flex-wrap:wrap}.trace-row span{overflow-wrap:anywhere}

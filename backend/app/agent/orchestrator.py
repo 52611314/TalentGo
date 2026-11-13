@@ -112,6 +112,9 @@ class RealInterviewOrchestrator:
                                 'summary_used': bool((context or {}).get('session_summary')),
                                 'rubric_version': snapshot['rubric_version'], 'prompt_version': snapshot['prompt_version']},
                     usage={'input_tokens': result.input_tokens if result else None, 'output_tokens': result.output_tokens if result else None,
+                           'upstream_first_content_ms': result.first_content_ms if result else None,
+                           'input_cache_hit_tokens': result.input_cache_hit_tokens if result else None,
+                           'input_cache_miss_tokens': result.input_cache_miss_tokens if result else None,
                            'latency_ms': result.latency_ms if result else None, 'attempts': result.attempts if result else None}))
                 db.commit()
 

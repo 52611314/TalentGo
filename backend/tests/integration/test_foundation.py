@@ -20,7 +20,7 @@ def auth(identity, key=None):
 
 
 def test_health_and_real_database_port(client):
-    assert client.get('/api/v1/health/live').json()['data']['milestone'] == 'M4'
+    assert client.get('/api/v1/health/live').json()['data']['milestone'] == 'M5'
     ready = client.get('/api/v1/health/ready')
     assert ready.status_code == 200
     assert ready.json()['data']['port'] == 6543

@@ -1,4 +1,5 @@
 from uuid import UUID
+from typing import Literal
 from fastapi import APIRouter, Query, Request, Response
 from app.api.deps import CurrentUser, DB, Key, response
 from app.schemas.session import SessionAction, SessionCreate, SessionMessage, SessionPatch
@@ -6,6 +7,14 @@ from app.services import interview
 from app.services.operations import owned_operation
 
 router = APIRouter(prefix='/sessions', tags=['sessions'])
+
+
+@router.get('/{session_id}/report/export')
+def export(session_id: UUID, db: DB, user: CurrentUser, format: Literal['markdown','json'] = 'markdown'):
+    from app.services.exporting import export_report
+    text, media = export_report(db,user.id,session_id,format)
+    extension='json' if format=='json' else 'md'
+    return Response(content=text,media_type=media,headers={'Content-Disposition':f'attachment; filename="talentgo-{session_id}.{extension}"'})
 
 
 def dispatch(request, db, user_id, result):

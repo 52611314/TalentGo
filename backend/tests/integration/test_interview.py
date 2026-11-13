@@ -222,7 +222,7 @@ def test_process_interruption_recovery_does_not_generate_on_get(client):
     headers = identity(client)
     session = create(client, headers)
     with client.app.state.session_factory() as db:
-        user = db.scalar(select(User))
+        user = db.get(User, db.get(InterviewSession, uuid.UUID(session['id'])).user_id)
         accepted = submit(db, user.id, uuid.UUID(session['id']), SessionAction(expected_version=1, action='start'), 'unqueued-fixture')
     oid = accepted['operation_id']
     assert client.get(f'/api/v1/operations/{oid}', headers=headers).json()['data']['status'] == 'queued'

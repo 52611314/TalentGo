@@ -5,10 +5,12 @@ from app.services.memory import invalidate, profile_lock
 
 
 def task_data(row):
+    from app.services.scoring import RUBRIC_VERSION
     return {'id': str(row.id), 'source_session_id': str(row.source_session_id),
         'source_evaluation_id': str(row.source_evaluation_id), 'role': row.role, 'mode': row.mode,
         'topic': row.topic, 'instruction': row.instruction, 'rubric_version': row.rubric_version,
-        'status': row.status, 'created_at': row.created_at.isoformat()}
+        'status': row.status, 'can_practice': row.status == 'pending' and row.rubric_version == RUBRIC_VERSION,
+        'version_supported': row.rubric_version == RUBRIC_VERSION, 'created_at': row.created_at.isoformat()}
 
 
 def owned_task(db, user_id, tid):

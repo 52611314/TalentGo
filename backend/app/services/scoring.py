@@ -6,8 +6,8 @@ WEIGHTS = {
     'behavioral': dict(zip(DIMENSIONS, [15, 15, 20, 35, 15])),
     'pressure': dict(zip(DIMENSIONS, [20, 20, 25, 20, 15])),
 }
-RUBRIC_VERSION = 'rubric-1.0'
-PROMPT_VERSION = 'prompt-1.1'
+RUBRIC_VERSION = 'rubric-1.1'
+PROMPT_VERSION = 'prompt-1.2'
 
 
 def rounded(value):
@@ -15,6 +15,8 @@ def rounded(value):
 
 
 def question_score(dimensions, mode):
+    if all(dimensions[key]['score'] is None for key in ('accuracy_consistency','reasoning','evidence_detail')):
+        return None
     weights = WEIGHTS[mode]
     scored = [(Decimal(str(dimensions[key]['score'])), Decimal(weights[key]))
               for key in DIMENSIONS if dimensions[key]['score'] is not None]

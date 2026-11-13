@@ -1,0 +1,63 @@
+{
+  "export_version": "1.0",
+  "title": "M5 断网与草稿恢复 · Mock",
+  "role": "frontend",
+  "mode": "technical",
+  "notice": "仅供训练参考；Mock 不是能力评分。分数不核实经历、不诊断心理、不预测录用。",
+  "id": "bb6bae63-b99a-454f-8627-448d100d4635",
+  "session_id": "4bc756cb-9480-4d22-a570-b0745beff4c9",
+  "status": "ready",
+  "is_mock": true,
+  "total_score": null,
+  "summary": "本次计划 1 题，已提问 1 题，实际回答 1 题，跳过 0 题，未到达 0 题。以上为问答记录统计。当前为固定规则 Mock 演示，尚未评估回答质量，不提供能力分数或录用判断。",
+  "coverage": {
+    "asked": 1,
+    "scored": 0,
+    "planned": 1,
+    "skipped": 0,
+    "answered": 1,
+    "not_reached": 0
+  },
+  "dimension_scores": {},
+  "weights": {},
+  "strengths": [],
+  "gaps": [],
+  "recommendations": [],
+  "provider": "mock",
+  "model_name": null,
+  "rubric_version": null,
+  "prompt_version": null,
+  "question_evaluations": [],
+  "messages": [
+    {
+      "id": "f6b87a3f-6773-4838-ba00-0d728401ee36",
+      "seq": 1,
+      "speaker": "assistant",
+      "kind": "question",
+      "content": "浏览器从输入 URL 到显示页面，主要经历哪些步骤？",
+      "question_id": "76e40ea6-b73a-4344-858e-b7eb2febb712",
+      "operation_id": "dc90fc9c-d562-49f8-9f2e-5e91900bdffb",
+      "created_at": "2026-11-13T13:07:15.626153+00:00"
+    },
+    {
+      "id": "4dca2ee3-dcee-4e91-b272-a7cd03ff44a0",
+      "seq": 2,
+      "speaker": "user",
+      "kind": "answer",
+      "content": "M5 草稿恢复：这是一段尚未提交的合成回答。",
+      "question_id": "76e40ea6-b73a-4344-858e-b7eb2febb712",
+      "operation_id": "b86e879f-69a9-4677-adda-94ebc6cf3bca",
+      "created_at": "2026-11-13T13:07:27.948670+00:00"
+    },
+    {
+      "id": "c9c0626e-6df6-44b3-8ec0-f3d14f07ae83",
+      "seq": 3,
+      "speaker": "assistant",
+      "kind": "notice",
+      "content": "本次 Mock 训练已结束，正在整理实际问答与完成情况。此阶段不生成能力分数。",
+      "question_id": null,
+      "operation_id": "b86e879f-69a9-4677-adda-94ebc6cf3bca",
+      "created_at": "2026-11-13T13:07:28.227074+00:00"
+    }
+  ]
+}

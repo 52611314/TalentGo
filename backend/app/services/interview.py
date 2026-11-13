@@ -40,9 +40,17 @@ def latest_operation(db, session_id):
 
 
 def operation_data(db, operation):
-    seq = db.scalar(select(func.max(OperationEvent.seq)).where(OperationEvent.operation_id == operation.id)) or 0
+    seq, first_event, first_text = db.execute(select(func.max(OperationEvent.seq), func.min(OperationEvent.created_at),
+        func.min(OperationEvent.created_at).filter(OperationEvent.event_type == 'text.delta'))
+        .where(OperationEvent.operation_id == operation.id)).one()
+    def elapsed(stamp):
+        if not stamp:return None
+        value=(stamp-operation.created_at).total_seconds()*1000
+        return round(value) if value>=0 else None
     return {'id': str(operation.id), 'session_id': str(operation.session_id), 'kind': operation.kind,
-            'status': operation.status, 'attempt_no': operation.attempt_no, 'last_event_seq': seq,
+            'status': operation.status, 'attempt_no': operation.attempt_no, 'last_event_seq': seq or 0,
+            'timings': {'scope': 'operation_lifetime_including_retries', 'first_event_ms': elapsed(first_event),
+                        'first_visible_text_ms': elapsed(first_text), 'completion_ms': elapsed(operation.finished_at)},
             'cancel_requested': operation.cancel_requested, 'error_code': operation.error_code,
             'retryable': operation.status in {'failed', 'cancelled'}, 'result_refs': operation.result_refs}
 

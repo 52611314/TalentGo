@@ -10,6 +10,9 @@ class ModelResult:
     output_tokens: int | None
     latency_ms: int
     attempts: int
+    first_content_ms: int | None = None
+    input_cache_hit_tokens: int | None = None
+    input_cache_miss_tokens: int | None = None
 
 
 class JsonProvider(Protocol):
