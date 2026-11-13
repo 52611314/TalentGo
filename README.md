@@ -2,7 +2,7 @@
 
 面向计算机专业学生的软件开发实习与校招文字训练项目。
 
-**当前为 M3：真实模型、四 Skill 与原文证据评分已实施；两名人工评阅者校准待完成。停在 M3，M4 未开始。**
+**当前为 M4：长期记忆、来源复练和版本分组评分记录已接入。停在 M4，M5 未开始。**
 
 ## 当前能力
 
@@ -14,7 +14,7 @@
 - 报告显示覆盖、每题理由/缺口/建议、用户原文定位、模型与规则版本、Skill 阶段和实际用量。
 - 已保存回答与正式状态可刷新恢复；幂等回执、版本冲突和取消防止重复或迟到结果覆盖。
 
-长期记忆、趋势与持久复练任务留到 M4；完整场景回归、真实用户验证分别在 M5/M6。模型分数仅供训练参考，不能核实经历、诊断心理或预测录用。
+M4 新增记忆确认/纠正/删除、最多八条相关注入、旧结果失效、主题摘要、来源复练与完成判定、版本分组评分。入口为 /memories 与 /growth。完整场景回归、真实用户验证分别在 M5/M6。模型分数仅供训练参考，不能核实经历、诊断心理或预测录用。
 
 ## 本地启动
 
@@ -65,15 +65,15 @@ Compose 只管理 db，前后端为本机进程，服务仅回环开放。执行
 ./backend/.venv/Scripts/python.exe scripts/smoke-model.py --live
 ```
 
-本轮工程检查、三类真实一题闭环、小样本重复和注入观察详见 [M3 阶段报告](docs/M3阶段报告.md)。固定样本在 tests/fixtures/m3-scoring-samples.json；它们是作者合成材料，未有两人独立人评，不能充当人工真值或真实用户试用。
+本轮工程检查、三类真实一题闭环、小样本重复和注入观察详见 [M3 阶段报告](docs/M3阶段报告.md)。按用户要求，原两人人工填写改为模型辅助评估，结果在 tests/fixtures/m3-model-assisted-review.json。13 份均已填写，实际人工评阅为零，不能充当人评准确率或真实用户试用。M4 实施与验证见 [M4 阶段报告](docs/M4阶段报告.md)。
 
-![TalentGo M3 证据反馈](docs/assets/m3-report.jpg)
+![TalentGo M4 记忆与复练](docs/assets/m4-growth.jpg)
 
 ## 目录与说明
 
 - frontend：Vue 3、TypeScript、Vite、Pinia、Element Plus、Lucide。
 - backend：FastAPI、Pydantic、SQLAlchemy、psycopg、HTTPX、轻量 Skill 编排。
-- database：三次增量 Alembic 迁移，11 张业务表。
+- database：四次增量 Alembic 迁移，15 张业务表。
 - scripts：环境、启动、检查、备份及显式真实模型验证。
 - docs：[总览](docs/项目文档.md)、[完整开发计划](docs/项目开发计划.md)、[架构](docs/架构设计.md)、[接口](docs/接口文档.md)、[数据库](docs/数据库设计.md)、[评分](docs/Skill与评分设计.md)。
 

@@ -28,6 +28,7 @@ class InterviewSession(IdentityMixin, Base):
     profile_snapshot: Mapped[dict] = mapped_column(JSONB, default=dict)
     provider: Mapped[str] = mapped_column(String(24), default='mock')
     model_name: Mapped[str | None] = mapped_column(String(120))
+    source_task_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey('practice_tasks.id', ondelete='SET NULL', use_alter=True, name='fk_session_source_task'))
     model_base_url: Mapped[str | None] = mapped_column(String(500))
     rubric_version: Mapped[str | None] = mapped_column(String(64))
     prompt_version: Mapped[str | None] = mapped_column(String(64))

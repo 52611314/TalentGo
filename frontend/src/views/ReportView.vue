@@ -3,6 +3,7 @@ import { nextTick, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ArrowLeft, ArrowRight, CheckCheck, FlaskConical } from '@lucide/vue'
 import { getReport, getTrace } from '../api/sessions'
+import { request } from '../api/client'
 import { useIdentityStore } from '../stores/identity'
 import { DIMENSION_LABELS, type InterviewReport, type SkillTrace } from '../types/session'
 defineEmits<{ 'create-identity': [] }>()
@@ -12,6 +13,7 @@ const report = ref<InterviewReport | null>(null)
 const error = ref('')
 const traces = ref<SkillTrace[]>([])
 const traceError = ref('')
+const memoryUsages = ref<{id:string;memory_id:string;memory_version:number;memory_revision:number;phase:string;reason:string;still_exists:boolean}[]>([])
 let epoch = 0
 watch([() => route.params.id, () => identity.activeId], async () => {
   const ticket = ++epoch
@@ -19,6 +21,7 @@ watch([() => route.params.id, () => identity.activeId], async () => {
   error.value = ''
   traces.value = []
   traceError.value = ''
+  memoryUsages.value = []
   if (!identity.identity) return
   const token = identity.identity.token
   const id = String(route.params.id)
@@ -32,6 +35,8 @@ watch([() => route.params.id, () => identity.activeId], async () => {
       try {
         const trace = await getTrace(id, token)
         if (ticket === epoch) traces.value = trace.items
+        const usage = await request<{items:typeof memoryUsages.value}>(`/sessions/${id}/memory-usages`, {}, token)
+        if (ticket === epoch) memoryUsages.value = usage.items
       } catch { if (ticket === epoch) traceError.value = '执行记录暂未读取成功，可刷新页面重试。' }
     }
   } catch (e) { if (ticket === epoch) error.value = e instanceof Error ? e.message : '读取总结失败' }
@@ -53,6 +58,8 @@ watch([() => route.params.id, () => identity.activeId], async () => {
       <p class="mock-notice">反馈来自 {{ report.model_name }} · {{ report.prompt_version }} · {{ report.rubric_version }}。模型判断可能存在误差；评分不代表录用概率，不核实经历或诊断心理状态。</p>
       <div class="review-grid"><section v-for="group in [{title: '表现亮点', items: report.strengths}, {title: '待补充之处', items: report.gaps}, {title: '下一次怎么练', items: report.recommendations}]" :key="group.title" class="card"><h3>{{ group.title }}</h3><p v-if="!group.items?.length" class="muted">暂无足够依据</p><div v-for="(item, index) in group.items" :key="index" class="review-item"><p>{{ item.text }}</p><a v-for="qid in item.question_ids" :key="qid" :href="`#question-${qid}`" class="text-link">查看对应题目</a></div></section></div>
       <section class="card question-evaluation" v-for="q in report.question_evaluations" :key="q.id" :id="`question-${q.question_id}`"><div class="section-heading"><h2>第 {{ q.ordinal }} 题 · {{ q.topic }}</h2><strong>{{ q.question_score ?? '未计分' }}{{ q.question_score != null ? ' / 100' : '' }}</strong></div><p class="question-text">{{ q.question }}</p><span v-if="q.hint_used" class="subtle-tag">本题使用过提示</span><details v-for="(d, key) in q.dimensions" :key="key" class="evidence-dimension"><summary>{{ DIMENSION_LABELS[key] }} · {{ d.score ?? '材料不足' }}{{ d.score != null ? ' / 5' : '' }}</summary><p>{{ d.reason }}</p><blockquote v-for="(e, index) in d.evidence" :key="index"><p>“{{ e.quote }}”</p><a :href="`#message-${e.message_id}`">定位用户原文</a></blockquote></details><p v-if="q.missing_points.length"><strong>缺口：</strong>{{ q.missing_points.join('；') }}</p><p><strong>练习建议：</strong>{{ q.suggestion }}</p></section>
+      <p class="mock-notice"><RouterLink to="/growth" class="text-link">查看来源复练任务与分组评分记录 →</RouterLink></p>
+      <details class="card trace-panel"><summary>查看记忆注入来源（{{ memoryUsages.length }}）</summary><p v-if="!memoryUsages.length" class="field-help">本场没有注入已确认记忆。</p><div v-for="u in memoryUsages" :key="u.id" class="trace-row"><strong>{{u.phase}} · {{u.reason}}</strong><span>记忆 {{u.memory_id}} · v{{u.memory_version}} · 当时记忆版本 {{u.memory_revision}} · {{u.still_exists?'当前仍存在':'已删除，轨迹仅保留编号'}}</span></div></details>
       <details class="card trace-panel"><summary>查看 Skill 执行记录（{{ traces.length }}）</summary><p class="field-help">仅记录阶段、版本、用量与错误，不展示内部推理。未返回用量时显示「未知」。</p><p v-if="traceError" class="error-banner">{{ traceError }}</p><div v-for="t in traces" :key="t.id" class="trace-row"><strong>{{ t.skill_key }} · {{ t.phase }} · {{ t.status }}</strong><span>v{{ t.skill_version }} · 操作第 {{ t.attempt_no }} 次 · 模型请求 {{ t.usage.attempts ?? '未知' }} 次</span><span>输入 {{ t.usage.input_tokens ?? '未知' }} / 输出 {{ t.usage.output_tokens ?? '未知' }} tokens · {{ t.usage.latency_ms ?? '未知' }} ms {{ t.error_code }}</span></div></details>
     </template>
     <section class="card report-transcript"><div class="section-heading"><h2>本次问答记录</h2><span class="muted">完整正式消息，按实际顺序保存</span></div><div v-for="message in report.messages" :key="message.id" :id="`message-${message.id}`" class="transcript-item" :class="message.speaker"><span>{{ message.speaker === 'user' ? '你' : message.speaker === 'system' ? '状态' : report.is_mock ? 'TalentGo · Mock' : 'TalentGo' }}</span><p>{{ message.content }}</p></div></section>

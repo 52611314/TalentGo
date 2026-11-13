@@ -37,6 +37,8 @@ def update_profile(db: Session, user: User, patch: ProfilePatch, key: str) -> di
         raise AppError(409, 'VERSION_CONFLICT', '资料已变更，请刷新后再保存',
                        {'current_version': current.version if current else None})
     db.expire_all()
+    from app.services.memory import profile_lock, invalidate
+    invalidate(db, profile_lock(db, user.id))
     result = read_profile(db, user)
     db.add(IdempotencyReceipt(user_id=user.id, key_hash=key_hash, request_hash=digest, response_data=result))
     db.commit()

@@ -12,7 +12,7 @@ from sqlalchemy import func, select, text
 from app.agent.state_machine import ACTIVE, TERMINAL, configuration_state, require_action
 from app.core.errors import AppError
 from app.llm.mock import MockProvider
-from app.models import Evaluation, InterviewSession, Message, Operation, OperationEvent, Question, Report
+from app.models import Evaluation, InterviewSession, Message, Operation, OperationEvent, Question, Report, User
 from app.services.idempotency import begin_request, save_receipt
 from app.services.interview import (
     append_message, coverage, ensure_idle, now, operation_data, owned_operation, owned_session,
@@ -113,6 +113,8 @@ class OperationRunner:
         reference = db.get(Operation, operation_id)
         if reference is None:
             return None, None
+        # Share the acceptance lock order; source deletion may cascade into another session.
+        db.execute(select(User.id).where(User.id == reference.user_id).with_for_update(key_share=True))
         session = db.scalar(select(InterviewSession).where(InterviewSession.id == reference.session_id).with_for_update())
         operation = db.scalar(select(Operation).where(Operation.id == operation_id).with_for_update().execution_options(populate_existing=True))
         return session, operation
@@ -217,6 +219,12 @@ class OperationRunner:
                 session.status = 'completed'
                 session.ended_at = now()
                 append_message(db, session.id, 'assistant', 'notice', plan['text'], operation_id=operation.id)
+        if session.provider == 'deepseek':
+            from app.services.practice import derive
+            from app.services.memory import rebuild_summary
+            db.flush()
+            if session.status == 'completed': derive(db, session)
+            rebuild_summary(db, session)
         session.version += 1
         operation.status = 'succeeded'
         operation.finished_at = now()
@@ -268,6 +276,8 @@ class OperationRunner:
                     return
                 if session.version != operation.expected_session_version:
                     raise AppError(409, 'VERSION_CONFLICT', '生成期间会话发生变化')
+                if real_snapshot is not None:
+                    self.real.validate_revision(db, real_snapshot, lock=True)
                 self.commit_plan(db, session, operation, plan)
                 db.commit()
         except Exception as error:

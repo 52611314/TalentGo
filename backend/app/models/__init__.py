@@ -8,5 +8,9 @@ from app.models.operation import Operation, OperationEvent
 from app.models.report import Report
 from app.models.evaluation import Evaluation
 from app.models.skill_run import SkillRun
+from app.models.memory import Memory
+from app.models.memory_usage import MemoryUsage
+from app.models.session_summary import SessionSummary
+from app.models.practice_task import PracticeTask
 
-__all__ = ['User', 'Profile', 'IdempotencyReceipt', 'InterviewSession', 'Question', 'Message', 'Operation', 'OperationEvent', 'Report', 'Evaluation', 'SkillRun']
+__all__ = ['User', 'Profile', 'IdempotencyReceipt', 'InterviewSession', 'Question', 'Message', 'Operation', 'OperationEvent', 'Report', 'Evaluation', 'SkillRun', 'Memory', 'MemoryUsage', 'SessionSummary', 'PracticeTask']

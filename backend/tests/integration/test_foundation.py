@@ -20,7 +20,7 @@ def auth(identity, key=None):
 
 
 def test_health_and_real_database_port(client):
-    assert client.get('/api/v1/health/live').json()['data']['milestone'] == 'M3'
+    assert client.get('/api/v1/health/live').json()['data']['milestone'] == 'M4'
     ready = client.get('/api/v1/health/ready')
     assert ready.status_code == 200
     assert ready.json()['data']['port'] == 6543
@@ -162,4 +162,4 @@ def test_readiness_fails_for_schema_mismatch(client):
         assert client.get('/api/v1/health/live').status_code == 200
     finally:
         with client.app.state.engine.begin() as db:
-            db.execute(text("UPDATE alembic_version SET version_num='0003_m3_skills'"))
+            db.execute(text("UPDATE alembic_version SET version_num='0004_m4_memory'"))

@@ -18,7 +18,7 @@ const modelError = ref('')
 let pending: { signature: string; key: string; body: string } | null = null
 const pendingKey = computed(() => `talentgo.create-session.${identity.activeId}`)
 let scope = 0
-const form = reactive({ title: '我的模拟面试', provider: 'mock' as 'mock' | 'deepseek', role: null as TargetRole | null, mode: null as InterviewMode | null,
+const form = reactive({ title: '我的模拟面试', source_task_id: undefined as string | undefined, provider: 'mock' as 'mock' | 'deepseek', role: null as TargetRole | null, mode: null as InterviewMode | null,
   config: { question_count: 3, difficulty: 1, max_followups: 1, pressure_level: 1, pressure_consent: false } })
 watch(() => [identity.activeId, identity.profile, route.query.mode], () => {
   scope++
@@ -47,12 +47,26 @@ watch(() => identity.identity?.token, async token => {
     const status = await request<ModelStatus>('/models/status', {}, token)
     if (identity.identity?.token !== token) return
     models.value = status
-    if (!pending) form.provider = status.default_provider
+    if (!pending && !form.source_task_id) form.provider = status.default_provider
   } catch { if (identity.identity?.token === token) modelError.value = '模型状态读取失败，请刷新后选择真实模型。Mock 仍可使用。' }
 }, { immediate: true })
+watch([() => route.query.task, () => identity.identity?.token], async ([task, token]) => {
+  form.source_task_id = undefined
+  if (!task || !token || typeof task !== 'string') return
+  const ticket = scope
+  try {
+    const result = await request<{id:string;role:TargetRole;mode:InterviewMode;topic:string}>(`/practice-tasks/${task}`, {}, token)
+    if (ticket !== scope) return
+    form.source_task_id = result.id
+    form.role = result.role; form.mode = result.mode; form.provider = 'deepseek'
+    form.title = `针对复练 · ${result.topic}`
+    form.config.question_count = 1
+  } catch(e) { if(ticket === scope) error.value = e instanceof Error ? e.message : '读取来源任务失败' }
+}, {immediate:true})
 const needsClarification = computed(() => !form.role || !form.mode)
 async function create() {
   if (!identity.identity || busy.value) return
+  if (route.query.task && !form.source_task_id) { error.value = '来源任务尚未读取成功，请刷新后再创建复练'; return }
   busy.value = true
   const ticket = scope
   error.value = ''
@@ -82,15 +96,16 @@ async function create() {
 </script>
 
 <template>
-  <section class="page-heading"><div><div class="eyebrow"><span></span> MAKE ROOM FOR PRACTICE</div><h1>一次练习，从一个小目标开始。</h1><p>选好方向，也可以先留下不确定的地方，让我们一起确认。</p></div><span class="mock-badge"><FlaskConical :size="14" /> M3 · 证据化反馈</span></section>
+  <section class="page-heading"><div><div class="eyebrow"><span></span> MAKE ROOM FOR PRACTICE</div><h1>一次练习，从一个小目标开始。</h1><p>选好方向，也可以先留下不确定的地方，让我们一起确认。</p></div><span class="mock-badge"><FlaskConical :size="14" /> M4 · 个性化复练</span></section>
   <section v-if="!identity.identity" class="card empty-profile"><Braces :size="32" /><h2>先为你的练习建立身份</h2><p>面试记录只对当前身份开放，刷新后也可以继续。</p><button class="button primary" @click="$emit('create-identity')">创建训练身份 <ArrowRight :size="16" /></button></section>
   <div v-else class="setup-layout">
     <form class="card profile-form" @submit.prevent="create">
       <div class="form-card-title"><span class="icon-box"><Braces :size="20" /></span><div><h2>配置这次练习</h2><p>不确定岗位或类型时，选择「先确认」进入澄清。</p></div></div>
+      <p v-if="form.source_task_id" class="mock-notice">本次来源于已有复练任务：首题针对来源主题，实际完成有效评价后更新任务。</p>
       <fieldset :disabled="busy || uncertain">
-        <div class="form-section"><label for="session-provider">训练来源</label><select id="session-provider" v-model="form.provider"><option value="mock">Mock · 固定规则，不计分</option><option value="deepseek" :disabled="!models?.providers.find(p => p.id === 'deepseek')?.available">DeepSeek · {{ models?.providers.find(p => p.id === 'deepseek')?.model || '需配置密钥' }}</option></select><p class="field-help">{{ models?.providers.find(p => p.id === form.provider)?.description || '正在读取本地配置…' }}</p><p v-if="modelError" class="error-banner">{{ modelError }}</p></div>
+        <div class="form-section"><label for="session-provider">训练来源</label><select id="session-provider" v-model="form.provider" :disabled="!!form.source_task_id"><option value="mock">Mock · 固定规则，不计分</option><option value="deepseek" :disabled="!models?.providers.find(p => p.id === 'deepseek')?.available">DeepSeek · {{ models?.providers.find(p => p.id === 'deepseek')?.model || '需配置密钥' }}</option></select><p class="field-help">{{ models?.providers.find(p => p.id === form.provider)?.description || '正在读取本地配置…' }}</p><p v-if="modelError" class="error-banner">{{ modelError }}</p></div>
         <div class="form-section"><label for="session-title">练习名称</label><input id="session-title" v-model="form.title" minlength="1" maxlength="120" required />
-          <div class="two-fields"><div><label for="session-role">目标岗位</label><select id="session-role" v-model="form.role"><option :value="null">还不确定，先确认</option><option value="frontend">前端开发</option><option value="backend">后端开发</option></select></div><div><label for="session-mode">面试类型</label><select id="session-mode" v-model="form.mode"><option :value="null">还不确定，先确认</option><option value="technical">技术面试</option><option value="behavioral">行为面试</option><option value="pressure">压力面试</option></select></div></div>
+          <div class="two-fields"><div><label for="session-role">目标岗位</label><select id="session-role" v-model="form.role" :disabled="!!form.source_task_id"><option :value="null">还不确定，先确认</option><option value="frontend">前端开发</option><option value="backend">后端开发</option></select></div><div><label for="session-mode">面试类型</label><select id="session-mode" v-model="form.mode" :disabled="!!form.source_task_id"><option :value="null">还不确定，先确认</option><option value="technical">技术面试</option><option value="behavioral">行为面试</option><option value="pressure">压力面试</option></select></div></div>
         </div>
         <div class="form-section"><div class="form-section-label"><span>02</span><h3>控制你的练习节奏</h3></div><div class="two-fields"><div><label for="question-count">主问题数量（1—10）</label><input id="question-count" type="number" v-model.number="form.config.question_count" min="1" max="10" required /></div><div><label for="followups">每题追问上限</label><select id="followups" v-model.number="form.config.max_followups"><option :value="0">不追问</option><option :value="1">最多 1 次</option><option :value="2">最多 2 次</option></select></div><div><label for="difficulty">起始难度</label><select id="difficulty" v-model.number="form.config.difficulty"><option :value="1">基础</option><option :value="2">进阶</option><option :value="3">深入</option></select></div></div></div>
         <div v-if="form.mode === 'pressure'" class="form-section"><label for="pressure-level">压力强度</label><select id="pressure-level" v-model.number="form.config.pressure_level"><option :value="1">温和</option><option :value="2">适中</option><option :value="3">较强</option></select><label class="memory-toggle"><input type="checkbox" v-model="form.config.pressure_consent" /><span><strong>我已了解并同意当前强度</strong><small>可以随时降低强度、暂停或结束。训练不作心理评价。</small></span></label></div>

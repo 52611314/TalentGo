@@ -5,12 +5,16 @@ import SetupView from '../views/SetupView.vue'
 import InterviewView from '../views/InterviewView.vue'
 import HistoryView from '../views/HistoryView.vue'
 import ReportView from '../views/ReportView.vue'
+import MemoryView from '../views/MemoryView.vue'
+import GrowthView from '../views/GrowthView.vue'
 
 export const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/', component: HomeView, meta: { title: '工作台' } },
     { path: '/profile', component: ProfileView, meta: { title: '训练档案' } },
+    { path: '/memories', component: MemoryView, meta: { title: '训练记忆' } },
+    { path: '/growth', component: GrowthView, meta: { title: '复练与成长' } },
     { path: '/practice', component: SetupView, meta: { title: '面试练习' } },
     { path: '/history', component: HistoryView, meta: { title: '训练记录' } },
     { path: '/sessions/:id/report', component: ReportView, meta: { title: '练习总结' } },

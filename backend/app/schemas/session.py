@@ -21,6 +21,7 @@ class SessionCreate(StrictModel):
     mode: Mode | None = None
     config: SessionConfig = Field(default_factory=SessionConfig)
     provider: Literal['mock', 'deepseek'] = 'mock'
+    source_task_id: UUID | None = None
 
 
 class SessionPatch(StrictModel):

@@ -72,7 +72,7 @@ def session_data(db, session):
             'status': session.status, 'config': session.config, 'version': session.version,
             'is_mock': session.provider == 'mock', 'provider': session.provider, 'model_name': session.model_name,
             'rubric_version': session.rubric_version, 'prompt_version': session.prompt_version,
-            'created_at': session.created_at.isoformat(),
+            'created_at': session.created_at.isoformat(), 'source_task_id': str(session.source_task_id) if session.source_task_id else None,
             'current_question': {'id': str(question.id), 'ordinal': question.ordinal, 'topic': question.topic,
                                  'content': question.content, 'followup_count': question.followup_count,
                                  'hint_used': question.hint_used, 'difficulty': question.difficulty} if question else None,
@@ -106,8 +106,12 @@ def create_session(db, user_id, body, key, settings=None):
         return receipt.response_data
     if body.provider == 'deepseek' and (settings is None or not settings.llm_api_key or not settings.llm_api_key.get_secret_value().strip()):
         raise AppError(503, 'MODEL_NOT_CONFIGURED', '真实模式需要后端本地 API Key，不会回退到 Mock')
+    if body.source_task_id:
+        from app.services.practice import validate_source
+        validate_source(db, user_id, body)
     session = InterviewSession(user_id=user_id, title=body.title.strip() or '我的模拟面试', role=body.role,
-                               mode=body.mode, config=body.config.model_dump(), status=configuration_state(body.role, body.mode), provider=body.provider)
+                               mode=body.mode, config=body.config.model_dump(), status=configuration_state(body.role, body.mode), provider=body.provider,
+                               source_task_id=body.source_task_id)
     if body.provider == 'deepseek':
         from app.services.scoring import PROMPT_VERSION, RUBRIC_VERSION
         session.model_name, session.model_base_url = settings.llm_model, settings.llm_base_url
@@ -134,6 +138,11 @@ def patch_session(db, user_id, session_id, body, key):
         if field != 'expected_version':
             setattr(session, field, body.config.model_dump() if field == 'config' else value)
     session.status = configuration_state(session.role, session.mode)
+    if session.source_task_id:
+        from app.services.practice import owned_task
+        task = owned_task(db, user_id, session.source_task_id)
+        if session.role != task.role or session.mode != task.mode:
+            raise AppError(422, 'TASK_CONFIG_MISMATCH', '复练岗位和模式必须与来源一致')
     session.version += 1
     db.flush()
     result = session_data(db, session)
@@ -171,6 +180,9 @@ def submit(db, user_id, session_id, body, key, is_message=False):
         if action == 'hint' and (db.get(Question, session.current_question_id).hint_used or db.scalar(select(Message.id).where(Message.question_id == session.current_question_id, Message.kind == 'hint').limit(1))):
             raise AppError(409, 'HINT_ALREADY_USED', '本题已经提供过提示')
     if action in {'pause', 'resume', 'abort', 'lower_pressure'}:
+        if action == 'abort' and session.source_task_id:
+            from app.services.practice import settle_task
+            settle_task(db, session)
         if action == 'lower_pressure':
             if session.mode != 'pressure' or body.pressure_level is None or body.pressure_level >= session.config['pressure_level']:
                 raise AppError(409, 'INVALID_STATE', '压力强度只能下调')
@@ -284,6 +296,10 @@ def delete_session(db, user_id, session_id, expected_version, key):
     session = owned_session(db, user_id, session_id, True)
     ensure_version(session, expected_version)
     ensure_idle(db, session)
+    from app.services.practice import settle_task
+    from app.services.memory import profile_lock, invalidate
+    if session.source_task_id: settle_task(db, session)
+    invalidate(db, profile_lock(db, user_id))
     session.current_question_id = None
     db.flush()
     db.execute(delete(InterviewSession).where(InterviewSession.id == session_id))

@@ -32,8 +32,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             runner.stop()
             engine.dispose()
 
-    app = FastAPI(title='TalentGo API', version='0.3.0', lifespan=lifespan,
-                  description='M3: explicit model modes, four skills and evidence-validated training scores.')
+    app = FastAPI(title='TalentGo API', version='0.4.0', lifespan=lifespan,
+                  description='M4: confirmed memory, bounded summaries, evidence-based practice tasks and grouped trends.')
     app.state.settings = settings
     app.state.engine = engine
     app.state.session_factory = factory
