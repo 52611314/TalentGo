@@ -6,12 +6,12 @@ from app.api.deps import DB, response
 from app.core.errors import AppError
 
 router = APIRouter(prefix='/health', tags=['health'])
-MIGRATION_HEAD = '0002_m2_interview'
+MIGRATION_HEAD = '0003_m3_skills'
 
 
 @router.get('/live')
 def live(request: Request):
-    return response(request, {'status': 'ok', 'app': 'TalentGo', 'milestone': 'M2', 'version': '0.2.0'})
+    return response(request, {'status': 'ok', 'app': 'TalentGo', 'milestone': 'M3', 'version': '0.3.0'})
 
 
 @router.get('/ready')
@@ -24,4 +24,4 @@ def ready(db: DB, request: Request):
     if versions != [MIGRATION_HEAD]:
         raise AppError(503, 'SCHEMA_NOT_READY', '数据库迁移版本与应用不一致')
     return response(request, {'status': 'ready', 'database': 'PostgreSQL', 'port': 6543,
-                             'schema_revision': MIGRATION_HEAD, 'milestone': 'M2'})
+                             'schema_revision': MIGRATION_HEAD, 'milestone': 'M3'})

@@ -1,5 +1,6 @@
 import uuid
-from sqlalchemy import CheckConstraint, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, CheckConstraint, ForeignKey, Integer, String, Text, UniqueConstraint, text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 from app.db.base import Base, IdentityMixin
 
@@ -18,3 +19,6 @@ class Question(IdentityMixin, Base):
     difficulty: Mapped[int] = mapped_column(Integer)
     status: Mapped[str] = mapped_column(String(24), default='open')
     followup_count: Mapped[int] = mapped_column(Integer, default=0)
+    hint_used: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text('false'))
+    source_key: Mapped[str | None] = mapped_column(String(120))
+    rubric_snapshot: Mapped[dict] = mapped_column(JSONB, default=dict, server_default=text("'{}'::jsonb"))

@@ -1,0 +1,15 @@
+{
+  "version": "rubric-1.0",
+  "weights": {
+    "relevance": 15,
+    "accuracy_consistency": 30,
+    "reasoning": 25,
+    "evidence_detail": 20,
+    "communication": 10
+  },
+  "anchors": [
+    "概念准确",
+    "解释理由",
+    "例子与边界具体"
+  ]
+}

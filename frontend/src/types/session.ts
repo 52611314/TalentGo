@@ -23,7 +23,8 @@ export interface InterviewSession {
   id: string; title: string; role: TargetRole | null; mode: InterviewMode | null
   status: 'clarifying' | 'ready' | 'interviewing' | 'paused' | 'evaluating' | 'completed' | 'aborted'
   config: SessionConfig; version: number; is_mock: boolean; created_at: string
-  current_question: { id: string; ordinal: number; topic: string; content: string; followup_count: number } | null
+  provider: 'mock' | 'deepseek'; model_name: string | null; rubric_version: string | null; prompt_version: string | null
+  current_question: { id: string; ordinal: number; topic: string; content: string; followup_count: number; difficulty: number; hint_used: boolean } | null
   active_operation_id: string | null; latest_operation: Operation | null; coverage: Coverage
 }
 export interface InterviewMessage {
@@ -31,10 +32,21 @@ export interface InterviewMessage {
   question_id: string | null; operation_id: string | null; created_at: string
 }
 export interface Page<T> { items: T[]; next_cursor: string | null }
-export interface MockReport {
-  id?: string; session_id?: string; status: string; is_mock: boolean; total_score: null
-  coverage: Coverage; summary?: string; messages?: InterviewMessage[]; dimension_scores?: Record<string, number>
+export interface InterviewReport {
+  id?: string; session_id?: string; status: string; is_mock: boolean; total_score: number | null
+  coverage: Coverage; summary?: string; messages?: InterviewMessage[]; dimension_scores?: Record<string, number | null>
+  weights?: Record<string, number>; model_name?: string; rubric_version?: string; prompt_version?: string
+  strengths?: ReviewItem[]; gaps?: ReviewItem[]; recommendations?: ReviewItem[]; question_evaluations?: QuestionEvaluation[]
 }
+export interface ReviewItem { text: string; question_ids: string[] }
+export interface QuestionEvaluation {
+  id: string; question_id: string; question: string; ordinal: number; topic: string; hint_used: boolean
+  question_score: number | null; missing_points: string[]; suggestion: string
+  dimensions: Record<string, { score: number | null; reason: string; evidence: { message_id: string; quote: string }[] }>
+}
+export interface SkillTrace { id: string; skill_key: string; skill_version: string; phase: string; status: string; model_name: string; attempt_no: number; error_code: string | null; usage: { input_tokens: number | null; output_tokens: number | null; latency_ms: number | null; attempts: number | null } }
+export interface ModelStatus { default_provider: 'mock' | 'deepseek'; providers: { id: string; available: boolean; model: string | null; description: string }[] }
+export const DIMENSION_LABELS: Record<string, string> = { relevance: '切题程度', accuracy_consistency: '准确与一致性', reasoning: '分析与推理', evidence_detail: '证据与细节', communication: '表达沟通' }
 export const STATUS_LABELS: Record<InterviewSession['status'], string> = {
   clarifying: '确认目标', ready: '准备开始', interviewing: '练习中', paused: '已暂停',
   evaluating: '整理总结', completed: '已完成', aborted: '已取消',

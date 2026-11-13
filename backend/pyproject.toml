@@ -1,6 +1,6 @@
 [project]
 name = "talentgo-api"
-version = "0.2.0"
+version = "0.3.0"
 description = "TalentGo interview coach foundation"
 requires-python = ">=3.12,<3.14"
 dependencies = [
@@ -10,6 +10,7 @@ dependencies = [
   "sqlalchemy>=2.0,<2.1",
   "psycopg[binary]>=3.2,<4",
   "alembic>=1.14,<2",
+  "httpx>=0.28,<1",
 ]
 
 [dependency-groups]

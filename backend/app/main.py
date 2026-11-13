@@ -23,7 +23,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):
-        runner = OperationRunner(engine, factory, settings.mock_chunk_delay)
+        runner = OperationRunner(engine, factory, settings.mock_chunk_delay, settings=settings)
         runner.start()
         app.state.runner = runner
         try:
@@ -32,8 +32,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             runner.stop()
             engine.dispose()
 
-    app = FastAPI(title='TalentGo API', version='0.2.0', lifespan=lifespan,
-                  description='M2: deterministic Mock interview lifecycle. No real LLM or ability scoring.')
+    app = FastAPI(title='TalentGo API', version='0.3.0', lifespan=lifespan,
+                  description='M3: explicit model modes, four skills and evidence-validated training scores.')
     app.state.settings = settings
     app.state.engine = engine
     app.state.session_factory = factory

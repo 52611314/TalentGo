@@ -17,5 +17,5 @@ export const router = createRouter({
     { path: '/sessions/:id', component: InterviewView, meta: { title: '面试室' } },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
-  scrollBehavior: () => ({ top: 0 }),
+  scrollBehavior: (to, _from, savedPosition) => to.hash ? { el: to.hash, top: 20 } : savedPosition || { top: 0 },
 })

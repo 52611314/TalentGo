@@ -6,6 +6,7 @@ export function useOperationStream() {
   const partial = ref('')
   const streamError = ref('')
   const connected = ref(false)
+  const phase = ref('')
   let controller: AbortController | null = null
   let epoch = 0
 
@@ -15,6 +16,7 @@ export function useOperationStream() {
     controller = null
     connected.value = false
     partial.value = ''
+    phase.value = ''
   }
 
   async function attach(operationId: string, token: string, onTerminal: () => Promise<void>) {
@@ -56,6 +58,7 @@ export function useOperationStream() {
             lastId = id
             const payload = JSON.parse(data)
             if (event === 'operation.started') partial.value = ''
+            if (event === 'operation.phase') phase.value = ({ clarify: '正在确认训练目标', question: '正在准备问题', evaluate: '正在核对答案与评分证据', review: '正在整理复盘建议', hint: '正在生成提示' } as Record<string, string>)[payload.phase] || '正在处理'
             if (event === 'text.delta') partial.value += payload.text
             if (['operation.succeeded', 'operation.failed', 'operation.cancelled'].includes(event || '')) {
               terminal = true
@@ -84,5 +87,5 @@ export function useOperationStream() {
   }
 
   onBeforeUnmount(stop)
-  return { partial, streamError, connected, attach, stop }
+  return { partial, phase, streamError, connected, attach, stop }
 }

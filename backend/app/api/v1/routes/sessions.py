@@ -17,7 +17,7 @@ def dispatch(request, db, user_id, result):
 
 @router.post('', status_code=201)
 def create(body: SessionCreate, db: DB, user: CurrentUser, key: Key, request: Request):
-    return response(request, interview.create_session(db, user.id, body, key))
+    return response(request, interview.create_session(db, user.id, body, key, request.app.state.settings))
 
 
 @router.get('')
@@ -60,6 +60,11 @@ def action(session_id: UUID, body: SessionAction, db: DB, user: CurrentUser, key
 @router.get('/{session_id}/report')
 def report(session_id: UUID, db: DB, user: CurrentUser, request: Request):
     return response(request, interview.report_data(db, user.id, session_id))
+
+
+@router.get('/{session_id}/trace')
+def trace(session_id: UUID, db: DB, user: CurrentUser, request: Request):
+    return response(request, interview.trace_data(db, user.id, session_id))
 
 
 @router.delete('/{session_id}', status_code=204)

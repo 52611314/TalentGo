@@ -20,6 +20,7 @@ class SessionCreate(StrictModel):
     role: Role | None = None
     mode: Mode | None = None
     config: SessionConfig = Field(default_factory=SessionConfig)
+    provider: Literal['mock', 'deepseek'] = 'mock'
 
 
 class SessionPatch(StrictModel):

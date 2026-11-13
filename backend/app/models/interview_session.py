@@ -27,6 +27,10 @@ class InterviewSession(IdentityMixin, Base):
     config: Mapped[dict] = mapped_column(JSONB)
     profile_snapshot: Mapped[dict] = mapped_column(JSONB, default=dict)
     provider: Mapped[str] = mapped_column(String(24), default='mock')
+    model_name: Mapped[str | None] = mapped_column(String(120))
+    model_base_url: Mapped[str | None] = mapped_column(String(500))
+    rubric_version: Mapped[str | None] = mapped_column(String(64))
+    prompt_version: Mapped[str | None] = mapped_column(String(64))
     version: Mapped[int] = mapped_column(Integer, default=1)
     current_question_id: Mapped[uuid.UUID | None]
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

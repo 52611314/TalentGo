@@ -7,7 +7,7 @@ from sqlalchemy import delete, func, select, tuple_
 
 from app.agent.state_machine import ACTIVE, configuration_state, require_action
 from app.core.errors import AppError
-from app.models import InterviewSession, Message, Operation, OperationEvent, Profile, Question, Report
+from app.models import Evaluation, InterviewSession, Message, Operation, OperationEvent, Profile, Question, Report, SkillRun
 from app.schemas.profile import ProfileRead
 from app.services.idempotency import begin_request, save_receipt
 
@@ -60,7 +60,9 @@ def coverage(db, session):
                             Message.speaker == 'user', Message.kind == 'answer')).all())
     return {'planned': session.config['question_count'], 'asked': len(questions), 'answered': len(answered),
             'skipped': sum(q.status == 'skipped' for q in questions),
-            'not_reached': max(0, session.config['question_count'] - len(questions)), 'scored': 0}
+            'not_reached': max(0, session.config['question_count'] - len(questions)),
+            'scored': db.scalar(select(func.count()).select_from(Evaluation).where(Evaluation.session_id == session.id,
+                Evaluation.scope == 'final', Evaluation.question_score.is_not(None))) or 0}
 
 
 def session_data(db, session):
@@ -68,9 +70,12 @@ def session_data(db, session):
     question = db.get(Question, session.current_question_id) if session.current_question_id else None
     return {'id': str(session.id), 'title': session.title, 'role': session.role, 'mode': session.mode,
             'status': session.status, 'config': session.config, 'version': session.version,
-            'is_mock': True, 'provider': session.provider, 'created_at': session.created_at.isoformat(),
+            'is_mock': session.provider == 'mock', 'provider': session.provider, 'model_name': session.model_name,
+            'rubric_version': session.rubric_version, 'prompt_version': session.prompt_version,
+            'created_at': session.created_at.isoformat(),
             'current_question': {'id': str(question.id), 'ordinal': question.ordinal, 'topic': question.topic,
-                                 'content': question.content, 'followup_count': question.followup_count} if question else None,
+                                 'content': question.content, 'followup_count': question.followup_count,
+                                 'hint_used': question.hint_used, 'difficulty': question.difficulty} if question else None,
             'active_operation_id': str(latest.id) if latest and latest.status in ACTIVE else None,
             'latest_operation': operation_data(db, latest) if latest else None, 'coverage': coverage(db, session)}
 
@@ -94,13 +99,19 @@ def append_message(db, session_id, speaker, kind, content, question_id=None, ope
     return message
 
 
-def create_session(db, user_id, body, key):
+def create_session(db, user_id, body, key, settings=None):
     payload = body.model_dump(mode='json')
     receipt, key_hash, digest = begin_request(db, user_id, key, 'POST', '/api/v1/sessions', payload)
     if receipt:
         return receipt.response_data
+    if body.provider == 'deepseek' and (settings is None or not settings.llm_api_key or not settings.llm_api_key.get_secret_value().strip()):
+        raise AppError(503, 'MODEL_NOT_CONFIGURED', '真实模式需要后端本地 API Key，不会回退到 Mock')
     session = InterviewSession(user_id=user_id, title=body.title.strip() or '我的模拟面试', role=body.role,
-                               mode=body.mode, config=body.config.model_dump(), status=configuration_state(body.role, body.mode))
+                               mode=body.mode, config=body.config.model_dump(), status=configuration_state(body.role, body.mode), provider=body.provider)
+    if body.provider == 'deepseek':
+        from app.services.scoring import PROMPT_VERSION, RUBRIC_VERSION
+        session.model_name, session.model_base_url = settings.llm_model, settings.llm_base_url
+        session.prompt_version, session.rubric_version = PROMPT_VERSION, RUBRIC_VERSION
     db.add(session)
     db.flush()
     result = session_data(db, session)
@@ -157,7 +168,7 @@ def submit(db, user_id, session_id, body, key, is_message=False):
             Operation.request_payload['question_id'].astext == str(session.current_question_id)).limit(1))
         if action == 'answer' and unresolved:
             raise AppError(409, 'OPERATION_RETRY_REQUIRED', '原答案已保存，请重试原操作，不要再次提交答案')
-        if action == 'hint' and db.scalar(select(Message.id).where(Message.question_id == session.current_question_id, Message.kind == 'hint').limit(1)):
+        if action == 'hint' and (db.get(Question, session.current_question_id).hint_used or db.scalar(select(Message.id).where(Message.question_id == session.current_question_id, Message.kind == 'hint').limit(1))):
             raise AppError(409, 'HINT_ALREADY_USED', '本题已经提供过提示')
     if action in {'pause', 'resume', 'abort', 'lower_pressure'}:
         if action == 'lower_pressure':
@@ -234,11 +245,35 @@ def report_data(db, user_id, session_id):
     report = db.scalar(select(Report).where(Report.session_id == session_id))
     if report is None:
         latest = latest_operation(db, session_id)
-        return {'status': 'failed' if latest and latest.status == 'failed' else 'pending', 'is_mock': True,
+        return {'status': 'failed' if latest and latest.status == 'failed' else 'pending', 'is_mock': session.provider == 'mock',
                 'total_score': None, 'coverage': coverage(db, session)}
     return {'id': str(report.id), 'session_id': str(session_id), 'status': report.status, 'is_mock': report.is_mock,
-            'total_score': None, 'summary': report.summary, 'coverage': report.coverage,
-            'dimension_scores': {}, 'messages': [message_data(m) for m in db.scalars(select(Message).where(Message.session_id == session_id).order_by(Message.seq)).all()]}
+            'total_score': float(report.total_score) if report.total_score is not None else None,
+            'summary': report.summary, 'coverage': report.coverage, 'dimension_scores': report.dimension_scores,
+            'weights': report.weights, 'strengths': report.strengths, 'gaps': report.gaps, 'recommendations': report.recommendations,
+            'provider': report.provider, 'model_name': report.model_name, 'rubric_version': report.rubric_version,
+            'prompt_version': report.prompt_version, 'question_evaluations': evaluations_for_report(db, session_id),
+            'messages': [message_data(m) for m in db.scalars(select(Message).where(Message.session_id == session_id).order_by(Message.seq)).all()]}
+
+
+def evaluations_for_report(db, session_id):
+    from app.agent.orchestrator import evaluation_data
+    rows = db.scalars(select(Evaluation).where(Evaluation.session_id == session_id, Evaluation.scope == 'final').order_by(Evaluation.created_at)).all()
+    result = []
+    for row in rows:
+        question = db.get(Question, row.question_id)
+        result.append({**evaluation_data(row), 'question': question.content, 'ordinal': question.ordinal,
+                       'topic': question.topic, 'hint_used': question.hint_used})
+    return result
+
+
+def trace_data(db, user_id, session_id):
+    owned_session(db, user_id, session_id)
+    return {'items': [{'id': str(r.id), 'skill_key': r.skill_key, 'skill_version': r.skill_version,
+        'phase': r.phase, 'status': r.status, 'provider': r.provider, 'model_name': r.model_name,
+        'attempt_no': r.attempt_no, 'usage': r.usage, 'error_code': r.error_code,
+        'input_refs': r.input_refs} for r in db.scalars(select(SkillRun).where(SkillRun.session_id == session_id).order_by(SkillRun.created_at)).all()],
+        'next_cursor': None}
 
 
 def delete_session(db, user_id, session_id, expected_version, key):

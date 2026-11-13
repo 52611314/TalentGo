@@ -1,32 +1,41 @@
 # TalentGo · 你的面试成长空间
 
-面向计算机专业学生的软件开发实习与校招训练项目。
+面向计算机专业学生的软件开发实习与校招文字训练项目。
 
-**当前完成 M2：固定规则 Mock 面试闭环；停在 M2，M3 尚未开始。**
+**当前为 M3：真实模型、四 Skill 与原文证据评分已实施；两名人工评阅者校准待完成。停在 M3，M4 未开始。**
 
 ## 当前能力
 
-- Vue 工作台与训练档案页面，显示真实后端/数据库健康状态。
-- 匿名训练身份创建、浏览器内切换、令牌校验；数据库仅存令牌哈希。
-- 保存目标岗位、经验阶段、技术栈、背景、目标与反馈偏好，刷新仍可读取。
-- 后端身份隔离、乐观锁、幂等回执及并发冲突处理。
-- PostgreSQL **6543**、首个 Alembic 迁移、独立测试库、前后端依赖锁及 Windows 脚本。
+- Vue 工作台、匿名身份与训练档案，PostgreSQL **6543** 持久化；资料/会话按身份隔离。
+- 配置前后端岗位、技术/行为/压力模式，真实语义澄清、完整问答、追问/提示/跳过、暂停/恢复、停止/重试。
+- 技术深挖、行为 STAR、建设性压力、证据复盘四 Skill，40 个项目自写种子题与题目锚点。
+- DeepSeek 真实模型和明确标记的 Mock 独立选择。Mock 不计能力分，服务失败不静默回退。
+- 五维结构与原文引用校验、一次受控修复；后端 Decimal 计算主问题最终成绩，追问不重复计权。
+- 报告显示覆盖、每题理由/缺口/建议、用户原文定位、模型与规则版本、Skill 阶段和实际用量。
+- 已保存回答与正式状态可刷新恢复；幂等回执、版本冲突和取消防止重复或迟到结果覆盖。
 
-M2 新增配置与必要澄清、正式消息、固定 Mock 提问/追问、提示/跳过、暂停恢复、停止与重试、SSE 事件、训练历史和 Mock 总结。刷新保留正式问答与本机草稿，重复请求不会重复保存答案。
-
-真实模型、四 Skill、能力评分、长期记忆和复练留到 M3/M4。Mock 报告只统计实际完成情况，total_score=null，不展示虚构能力分数。
+长期记忆、趋势与持久复练任务留到 M4；完整场景回归、真实用户验证分别在 M5/M6。模型分数仅供训练参考，不能核实经历、诊断心理或预测录用。
 
 ## 本地启动
 
-需要 Windows PowerShell、Python 3.12/3.13、Node ≥22.12、已启动的 Docker Desktop。在项目根目录执行：
+需要 Windows PowerShell、Python 3.12/3.13、Node ≥22.12、已启动的 Docker Desktop。根目录执行：
 
 ```powershell
 ./scripts/setup.ps1
 ```
 
-脚本保留已有配置，创建缺失的本地 .env 与随机数据库密码，安装锁定依赖、启动专属数据库、迁移开发库并创建独立测试库。样例密码不能原样使用。
+脚本保留已有配置与数据库卷，创建缺失的随机本机密码、安装锁定依赖、启动 db、升级开发库并创建独立测试库。不要将样例密码原样使用，不要为升级删卷。
 
-两个终端分别运行：
+在 backend/.env 配置真实模型：
+
+```dotenv
+LLM_PROVIDER=deepseek
+LLM_API_KEY=仅在本机填写实际密钥
+LLM_BASE_URL=https://api.deepseek.com
+LLM_MODEL=deepseek-flash
+```
+
+Key 不入 Git；修改配置后重启后端。默认新环境不设 Key 时仍可使用 Mock。“已配置”仅表示本机有值，实际调用才验证密钥、余额与服务。官方参数参考 [DeepSeek Chat Completions](https://api-docs.deepseek.com/api/create-chat-completion/)，配置细节见 [环境说明](docs/环境配置说明.md)。
 
 ```powershell
 # 终端一
@@ -42,29 +51,30 @@ M2 新增配置与必要澄清、正式消息、固定 Mock 提问/追问、提�
 | 面试配置 | http://127.0.0.1:5173/practice |
 | 训练记录 | http://127.0.0.1:5173/history |
 | API 文档 | http://127.0.0.1:8000/docs |
-| 数据层就绪 | http://127.0.0.1:8000/api/v1/health/ready |
+| 数据就绪 | http://127.0.0.1:8000/api/v1/health/ready |
 | PostgreSQL | localhost:6543；开发库 talentgo，测试库 talentgo_test |
 
-Compose 当前只管理 db，前后端为本机进程；所有服务仅回环地址开放。普通停止保留数据库卷，不要删卷。服务端以 postgres -p 6543 启动，已实际查询 SHOW port 验证。
+Compose 只管理 db，前后端为本机进程，服务仅回环开放。执行器每库仅允许一个后端进程，不能多 workers；中断操作启动后明确标失败，再由用户重试，不是分布式任务队列。
 
-## 检查与展示
+## 验证与展示
 
 ```powershell
+# 固定夹具与隔离测试库，不调用外部模型
 ./scripts/check.ps1
+# 显式真实调用：3 个合成一题会话，通常约 9 次请求，另有有限格式修复
+./backend/.venv/Scripts/python.exe scripts/smoke-model.py --live
 ```
 
-35 项后端测试通过（M1 的 15 项与 M2 的 20 项）；类型检查与生产构建通过；M1/M2 迁移往返保留基础数据，空测试库重建和 ORM 差异检查通过。浏览器实际完成两题、提示、固定追问、草稿刷新、总结和历史回顾。详见 [M2 阶段报告](docs/M2阶段报告.md)，历史基线保留在 [M1 阶段报告](docs/M1阶段报告.md)。
+本轮工程检查、三类真实一题闭环、小样本重复和注入观察详见 [M3 阶段报告](docs/M3阶段报告.md)。固定样本在 tests/fixtures/m3-scoring-samples.json；它们是作者合成材料，未有两人独立人评，不能充当人工真值或真实用户试用。
 
-![TalentGo M2 Mock 总结](docs/assets/m2-report.jpg)
+![TalentGo M3 证据反馈](docs/assets/m3-report.jpg)
 
-## 目录与文档
+## 目录与说明
 
 - frontend：Vue 3、TypeScript、Vite、Pinia、Element Plus、Lucide。
-- backend：FastAPI、Pydantic、SQLAlchemy、psycopg。
-- database：Alembic；M1 基础三表，M2 新增会话/题目/消息/操作/事件/报告六表。
-- scripts：环境、启动、检查、备份；tests：后续对话场景占位。
-- docs：[文档总览](docs/项目文档.md)、[开发计划](docs/项目开发计划.md)、[架构](docs/架构设计.md)、[接口](docs/接口文档.md)、[数据库](docs/数据库设计.md)。
+- backend：FastAPI、Pydantic、SQLAlchemy、psycopg、HTTPX、轻量 Skill 编排。
+- database：三次增量 Alembic 迁移，11 张业务表。
+- scripts：环境、启动、检查、备份及显式真实模型验证。
+- docs：[总览](docs/项目文档.md)、[完整开发计划](docs/项目开发计划.md)、[架构](docs/架构设计.md)、[接口](docs/接口文档.md)、[数据库](docs/数据库设计.md)、[评分](docs/Skill与评分设计.md)。
 
-依赖锁为 backend/uv.lock、frontend/package-lock.json；后续功能文件保留空占位且未注册。真实 .env、虚拟环境、备份、运行产物均忽略，不上传 GitHub。
-
-匿名身份原始令牌保存在当前浏览器，遗失不可找回。本地 Docker 初始化角色具备开发管理权限，公开部署前需角色拆分、HTTPS、限流与身份恢复。本轮没有调用大模型，没有真实用户试用结论。
+依赖锁为 backend/uv.lock、frontend/package-lock.json。真实 .env、凭证、虚拟环境、备份及 .runtime 不上传。匿名身份令牌只保存在当前浏览器，遗失不可找回；本地数据库角色有开发管理权限，公开部署前仍需身份恢复、角色拆分、HTTPS 与限流。
