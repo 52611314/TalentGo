@@ -1,0 +1,27 @@
+# Secrets and local runtime
+.env
+.env.*
+!.env.example
+**/.venv/
+.tools/
+.runtime/
+**/__pycache__/
+*.py[cod]
+**/.pytest_cache/
+**/.ruff_cache/
+*.egg-info/
+**/node_modules/
+**/dist/
+**/*.tsbuildinfo
+**/playwright-report/
+**/test-results/
+tests/results/*
+!tests/results/.gitkeep
+database/backups/*
+!database/backups/.gitkeep
+*.dump
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
