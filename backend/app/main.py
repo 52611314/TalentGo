@@ -27,13 +27,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         runner.start()
         app.state.runner = runner
         try:
+            if settings.app_env == 'development':
+                from app.services.auth import seed_local_admin
+                with factory() as db:
+                    seed_local_admin(db)
             yield
         finally:
             runner.stop()
             engine.dispose()
 
-    app = FastAPI(title='TalentGo API', version='0.5.0', lifespan=lifespan,
-                  description='M5: PC scenario acceptance, safe report exports, content-score eligibility and measured operation/model timings.')
+    app = FastAPI(title='TalentGo API', version='0.6.0', lifespan=lifespan,
+                  description='TalentGo 面试训练：账号、岗位选择、实时问答、证据评价和专项练习。')
     app.state.settings = settings
     app.state.engine = engine
     app.state.session_factory = factory

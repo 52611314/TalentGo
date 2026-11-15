@@ -7,7 +7,7 @@ WEIGHTS = {
     'pressure': dict(zip(DIMENSIONS, [20, 20, 25, 20, 15])),
 }
 RUBRIC_VERSION = 'rubric-1.1'
-PROMPT_VERSION = 'prompt-1.2'
+PROMPT_VERSION = 'prompt-1.3'
 
 
 def rounded(value):

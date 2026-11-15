@@ -133,17 +133,20 @@ class OperationRunner:
             role, mode = session.role, session.mode
             if kind == 'clarification':
                 content = operation.request_payload['content'].lower()
-                front = '前端' in content or 'frontend' in content
-                back = '后端' in content or 'backend' in content
-                if not role and front != back:
-                    role = 'frontend' if front else 'backend'
+                from app.core.roles import ROLES
+                matches = [r['id'] for r in ROLES if r['label'].lower() in content or r['id'] == content.strip()]
+                if not matches:
+                    matches = [r['id'] for r in ROLES if r['id'] in {'frontend', 'backend'}
+                               and ('前端' if r['id'] == 'frontend' else '后端') in content]
+                if not role and len(matches) == 1:
+                    role = matches[0]
                 modes = [name for name, token in [('technical', '技术'), ('behavioral', '行为'), ('pressure', '压力')]
                          if token in content or name in content]
                 if not mode and len(modes) == 1:
                     mode = modes[0]
             missing = []
             if not role:
-                missing.append('岗位：前端 / 后端')
+                missing.append('目标岗位：请在搜索列表中选择，或填写完整岗位名称')
             if not mode:
                 missing.append('面试类型：技术 / 行为 / 压力')
             content = ('请补充 ' + '；'.join(missing) + '。也可以直接点击页面中的选项。') if missing else '目标已确认。请检查配置后点击「开始面试」。'
@@ -157,9 +160,12 @@ class OperationRunner:
                 return {'type': 'followup', 'text': followup}
         ordinal = (question.ordinal + 1) if question else 1
         if kind == 'finish' or ordinal > session.config['question_count']:
-            return {'type': 'report', 'text': '本次 Mock 训练已结束，正在整理实际问答与完成情况。此阶段不生成能力分数。'}
-        topic, content = self.provider.question(session.role, session.mode, ordinal)
-        return {'type': 'question', 'ordinal': ordinal, 'topic': topic, 'text': content}
+            return {'type': 'report', 'text': '本次 Mock 训练已结束，正在整理实际问答与完成情况。Mock 不生成能力分数。'}
+        from app.core.roles import role_for_question
+        target_role = role_for_question(session.role, session.config, ordinal)
+        topic, content = self.provider.question(target_role, session.mode, ordinal)
+        return {'type': 'question', 'ordinal': ordinal, 'topic': topic, 'text': content,
+                'rubric_snapshot': {'target_role': target_role}}
 
     def commit_plan(self, db, session, operation, plan):
         kind = plan['type']

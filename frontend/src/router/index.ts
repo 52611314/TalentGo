@@ -13,8 +13,8 @@ export const router = createRouter({
   routes: [
     { path: '/', component: HomeView, meta: { title: '工作台' } },
     { path: '/profile', component: ProfileView, meta: { title: '训练档案' } },
-    { path: '/memories', component: MemoryView, meta: { title: '训练记忆' } },
-    { path: '/growth', component: GrowthView, meta: { title: '复练与成长' } },
+    { path: '/memories', component: MemoryView, meta: { title: '个人偏好' } },
+    { path: '/growth', component: GrowthView, meta: { title: '专项练习' } },
     { path: '/practice', component: SetupView, meta: { title: '面试练习' } },
     { path: '/history', component: HistoryView, meta: { title: '训练记录' } },
     { path: '/sessions/:id/report', component: ReportView, meta: { title: '练习总结' } },

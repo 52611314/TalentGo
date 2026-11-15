@@ -2,13 +2,24 @@ import json
 from pathlib import Path
 from app.core.errors import AppError
 from app.core.security import hash_secret
+from app.core.roles import ROLE_BY_ID
 
 KNOWLEDGE = Path(__file__).resolve().parents[1] / 'knowledge'
 
 
 def seed_question(role, mode, ordinal):
-    path = KNOWLEDGE / ('question_banks/' + role + '.json' if mode == 'technical' else 'rubrics/' + mode + '.json')
-    return json.loads(path.read_text(encoding='utf-8'))['questions'][ordinal - 1]
+    target = ROLE_BY_ID[role]
+    if mode != 'technical' or role in {'frontend', 'backend'}:
+        path = KNOWLEDGE / ('question_banks/' + role + '.json' if mode == 'technical' else 'rubrics/' + mode + '.json')
+        seed = json.loads(path.read_text(encoding='utf-8'))['questions'][ordinal - 1]
+    else:
+        themes = ['核心概念与实践', '方案设计与取舍', '问题定位与验证', '质量与可靠性', '性能与成本',
+                  '边界与风险', '协作与交付', '工具与工作流程', '复杂场景分析', '项目复盘与改进']
+        seed = {'source_key': f'{role}-{ordinal:02}', 'topic': themes[ordinal - 1], 'dynamic': True,
+            'question': f'请针对{target["label"]}，围绕{target["focus"]}中的一个具体能力点设计问题。主题：{themes[ordinal - 1]}。',
+            'anchors': ['评价当前具体问题中的概念准确性、推理依据、实践验证与适用边界，不按关键词数量计分'],
+            'boundary': '依据岗位工作范围与当前题目评价；不要求候选人掌握其他岗位全部技能，不虚构标准答案或经历。'}
+    return {**seed, 'target_role': role, 'role_label': target['label'], 'role_focus': target['focus']}
 
 
 def answer_hash(question, thread):
@@ -18,11 +29,14 @@ def answer_hash(question, thread):
 
 
 def build_context(snapshot, seed, budget):
-    context = {'role': snapshot['role'], 'mode': snapshot['mode'], 'config': snapshot['config'],
+    target_role = seed.get('target_role', snapshot['role'])
+    context = {'role': target_role, 'role_label': ROLE_BY_ID[target_role]['label'], 'role_focus': ROLE_BY_ID[target_role]['focus'],
+        'mode': snapshot['mode'], 'config': snapshot['config'],
         'profile': snapshot['profile_snapshot'], 'question': snapshot['question'], 'seed': seed,
         'thread': snapshot['thread'], 'previous_questions': snapshot['previous_questions'],
         'recent_history': list(snapshot['history'])}
-    candidates = [m for m in snapshot.get('memories', []) if m['kind'] != 'weakness' or m['topic'] == seed['topic']]
+    candidates = [m for m in snapshot.get('memories', []) if m.get('role') in (None, target_role)
+                  and (m['kind'] != 'weakness' or m['topic'] == seed['topic'])]
     candidates.sort(key=lambda m: (m['topic'] != seed['topic'], m['source_type'] != 'user_explicit'))
     selected, seen = [], set()
     for item in candidates:

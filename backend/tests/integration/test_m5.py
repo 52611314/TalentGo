@@ -22,7 +22,8 @@ def test_export_preserves_source_evidence_versions_and_ownership(client,provider
     response=client.get(f'/api/v1/sessions/{sid}/report/export?format={format}',headers=h)
     assert response.status_code==200 and 'attachment;' in response.headers['content-disposition']
     assert 'no-store' in response.headers['cache-control'] and 'nosniff' in response.headers['x-content-type-options']
-    assert 'rubric-1.1' in response.text and 'prompt-1.2' in response.text
+    from app.services.scoring import PROMPT_VERSION
+    assert 'rubric-1.1' in response.text and PROMPT_VERSION in response.text
     if format=='json':
         data=response.json();assert data['is_mock'] is False and data['total_score']==80
         q=data['question_evaluations'][0];e=q['dimensions']['reasoning']['evidence'][0]

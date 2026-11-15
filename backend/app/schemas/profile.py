@@ -5,9 +5,9 @@ from typing import Annotated, Literal
 from pydantic import Field, StringConstraints, model_validator
 
 from app.schemas.common import StrictModel
+from app.core.roles import Role
 
 TechItem = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=50)]
-Role = Literal['frontend', 'backend']
 Level = Literal['beginner', 'intern', 'graduate']
 Style = Literal['concise', 'detailed', 'guided']
 

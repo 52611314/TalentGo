@@ -55,7 +55,12 @@ class MockProvider:
             return '行为表达', BEHAVIORAL[ordinal - 1]
         if mode == 'pressure':
             return '观点与依据', PRESSURE[ordinal - 1]
-        return (FRONTEND if role == 'frontend' else BACKEND)[ordinal - 1]
+        if role in {'frontend', 'backend'}:
+            return (FRONTEND if role == 'frontend' else BACKEND)[ordinal - 1]
+        from app.agent.context_builder import seed_question
+        from app.core.roles import ROLE_BY_ID
+        seed = seed_question(role, mode, ordinal)
+        return seed['topic'], f"请以{ROLE_BY_ID[role]['label']}的工作为例，说明你在「{seed['topic']}」上的理解、做法与验证方式。"
 
     def followup(self, answer: str, used: int, budget: int) -> str | None:
         if len(answer) < 50 and used < budget:

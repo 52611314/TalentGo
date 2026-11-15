@@ -103,9 +103,16 @@ class DeepSeekProvider:
                 return ModelResult(value, tokens_in if complete_usage else None, tokens_out if complete_usage else None,
                                    int((time.monotonic() - started) * 1000), attempt + 1, first_content_ms,
                                    cache_hit if complete_cache else None,cache_miss if complete_cache else None)
-            except (ValidationError, ValueError):
+            except (ValidationError, ValueError) as error:
                 if attempt:
                     raise AppError(503, 'MODEL_OUTPUT_INVALID', '模型结果或证据校验失败，已进行一次修复；没有计入成绩') from None
+                # Only schema paths/types or our static validator reason; never echo input values.
+                reason = '; '.join('.'.join(str(p) for p in e['loc']) + ': ' + e['type']
+                                   for e in error.errors()[:6]) if isinstance(error, ValidationError) else str(error)
                 messages += [{'role': 'assistant', 'content': content[:16000]},
-                             {'role': 'user', 'content': '上次结果未通过结构或原文引用校验。请重新输出完整 JSON；所有非空分数必须引用允许的用户答案 ID 和逐字原文。不得增加总分或不存在的来源。'}]
+                             {'role': 'user', 'content': f'上次 {schema.__name__} 结果未通过校验：{reason}。'
+                              '请更简洁地重新输出满足同一 schema 的完整 JSON，避免截断。不增加字段、总分或不存在的来源。'
+                              '若当前任务是出题，topic 必须完全等于 seed.topic，anchors 至少两条本题要点；'
+                              '若是评价，非空分数必须引用允许的用户答案 ID 与逐字原文；'
+                              '若是复盘，每条 question_ids 只能使用 evaluations 中的完整 question_id，text 简短，少写条目。'}]
         raise AppError(503, 'MODEL_OUTPUT_INVALID', '模型结果不可用')

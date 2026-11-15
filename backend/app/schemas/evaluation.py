@@ -4,6 +4,7 @@ from uuid import UUID
 
 from pydantic import Field, model_validator
 from app.schemas.common import StrictModel
+from app.core.roles import Role
 
 DIMENSIONS = ('relevance', 'accuracy_consistency', 'reasoning', 'evidence_detail', 'communication')
 Score = Annotated[Decimal, Field(ge=0, le=5, max_digits=3, decimal_places=2)]
@@ -45,6 +46,7 @@ class AnswerEvaluation(StrictModel):
 class GeneratedQuestion(StrictModel):
     topic: str = Field(min_length=1, max_length=80)
     question: str = Field(min_length=5, max_length=1800)
+    anchors: list[Annotated[str, Field(min_length=1, max_length=500)]] = Field(default_factory=list, max_length=6)
 
 
 class GeneratedHint(StrictModel):
@@ -52,7 +54,7 @@ class GeneratedHint(StrictModel):
 
 
 class ClarifiedGoal(StrictModel):
-    role: Literal['frontend', 'backend'] | None
+    role: Role | None
     mode: Literal['technical', 'behavioral', 'pressure'] | None
     reply: str = Field(min_length=5, max_length=1200)
 

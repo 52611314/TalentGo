@@ -11,7 +11,6 @@ from app.db.base import Base, IdentityMixin
 class Profile(IdentityMixin, Base):
     __tablename__ = 'profiles'
     __table_args__ = (
-        CheckConstraint("target_role IS NULL OR target_role IN ('frontend', 'backend')", name='role'),
         CheckConstraint("experience_level IS NULL OR experience_level IN ('beginner', 'intern', 'graduate')", name='level'),
         CheckConstraint("feedback_style IN ('concise', 'detailed', 'guided')", name='feedback_style'),
         CheckConstraint('version > 0 AND memory_revision > 0', name='versions'),

@@ -75,6 +75,18 @@ def test_one_repair_and_usage():
     assert len(calls[1]['messages']) == 4
 
 
+def test_repair_identifies_schema_field_without_echoing_input_value():
+    calls = []
+    def handler(request):
+        calls.append(json.loads(request.content))
+        return stream('{"hint":"short","extra":"DO_NOT_ECHO_VALUE"}' if len(calls) == 1 else '{"hint":"先解释事务的原子性。"}')
+    result = invoke(handler)
+    assert result.attempts == 2
+    repair = calls[1]['messages'][-1]['content']
+    assert 'GeneratedHint' in repair and 'extra_forbidden' in repair
+    assert 'DO_NOT_ECHO_VALUE' not in repair
+
+
 def test_unknown_usage_not_fabricated_on_repair():
     calls = []
     def handler(_):

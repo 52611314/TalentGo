@@ -3,11 +3,13 @@ from uuid import UUID
 from pydantic import Field, model_validator
 from app.schemas.common import StrictModel
 from app.schemas.profile import Role
+from app.core.roles import validate_selection
 
 Mode = Literal['technical', 'behavioral', 'pressure']
 
 
 class SessionConfig(StrictModel):
+    secondary_roles: list[Role] = Field(default_factory=list, max_length=2)
     question_count: int = Field(default=5, ge=1, le=10, strict=True)
     difficulty: int = Field(default=1, ge=1, le=3, strict=True)
     max_followups: int = Field(default=1, ge=0, le=2, strict=True)
@@ -22,6 +24,11 @@ class SessionCreate(StrictModel):
     config: SessionConfig = Field(default_factory=SessionConfig)
     provider: Literal['mock', 'deepseek'] = 'mock'
     source_task_id: UUID | None = None
+
+    @model_validator(mode='after')
+    def selection_valid(self):
+        validate_selection(self.role, self.config.model_dump())
+        return self
 
 
 class SessionPatch(StrictModel):

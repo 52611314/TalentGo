@@ -1,0 +1,973 @@
+{
+  "suite": "accounts-roles-pc-live",
+  "recorded_at": "2026-11-15T17:01:25.915128+00:00",
+  "human_participants": 0,
+  "notice": "Developer-agent synthetic answers, real DeepSeek calls. This is not human user testing or scoring calibration.",
+  "observed_recovery": "A question call and an initial review failed structured validation; each original operation was retried once. Answers and final grades were not duplicated. Concise review and phase-specific repair guidance were applied before final review retry.",
+  "difficulty_note": "The hardware question was generated before the role-switch difficulty fix. UX was generated after the fix at difficulty 1; engineering regression checks a fresh 1/2/1/1 mixed-role sequence.",
+  "evidence_quotes_verified": 21,
+  "role_order": [
+    "llm_app",
+    "llm_app",
+    "hardware",
+    "ux"
+  ],
+  "questions": [
+    {
+      "ordinal": 1,
+      "role": "llm_app",
+      "difficulty": 1,
+      "anchors": [
+        "能说清 RAG 的基本链路：对问题做检索（如向量化后查知识库）、把检索到的内容作为上下文拼入提示词、再由模型基于上下文生成回答",
+        "能指出 RAG 的核心动机：引入外部知识、缓解模型知识过时或缺乏私有领域知识的问题，并降低凭空编造",
+        "能说明检索质量是关键前提：检索不到或检索到无关内容时，生成质量会明显下降",
+        "能提到适用边界，例如问题需要多步推理、知识库本身缺失或过时、文档切分不当等情况下效果受限",
+        "概念表述准确，不把 RAG 等同于微调，也不声称 RAG 能完全消除幻觉"
+      ]
+    },
+    {
+      "ordinal": 2,
+      "role": "llm_app",
+      "difficulty": 2,
+      "anchors": [
+        "能区分向量检索（语义相似）与关键词检索（精确字面匹配）的适用差异，并说明混合检索加重排的动机与额外成本",
+        "能结合具体场景判断：型号、错误码等精确标识更适合关键词或混合方案，纯语义检索可能漏召回或混淆相近编号",
+        "能说明各方案的失效边界，如向量检索对罕见专有名词和数字不敏感、关键词检索对同义改写不鲁棒、重排带来延迟与算力开销",
+        "能给出可验证的选型方法，例如构造含精确标识与语义改写两类查询的评测集，分别看召回率、排序质量与端到端延迟",
+        "表述准确，不把某种检索方案当成普适最优，也不虚构未提供的业务数据或实验结果"
+      ]
+    },
+    {
+      "ordinal": 3,
+      "role": "hardware",
+      "difficulty": 3,
+      "anchors": [
+        "能先建立可验证的排查顺序（如先确认供电与上电时序、再确认电平与接口配置、最后看时序与信号完整性），并说明每一步的测量对象与判据",
+        "能识别 3.3V 与 1.8V 器件直连的电平兼容问题，说明需要电平转换或确认 IO 是否耐压，并指出错误接法可能导致的失效",
+        "能结合 SPI 模式（CPOL/CPHA）、片选时序、时钟速率与建立/保持时间分析通信失败原因，而非只凭现象猜测",
+        "能说明用示波器/逻辑分析仪观察 SCK、MOSI、MISO、CS 波形来判断问题归属，并指出探头带宽、接地方式等测量本身带来的误差边界",
+        "表述准确，不把某一原因当成唯一结论，能说明在缺少原理图、器件手册或实测波形时结论的不确定性"
+      ]
+    },
+    {
+      "ordinal": 4,
+      "role": "ux",
+      "difficulty": 1,
+      "anchors": [
+        "能说清可用性测试的基本要素：目标、代表性参与者、贴近真实场景的任务、观察记录方式，而非只罗列工具或术语",
+        "任务设计围绕结算流程的关键节点（如填写信息、选择支付、确认订单），并说明任务成功与否的判定标准",
+        "能区分可用性问题与用户个体差异/操作失误，说明依据（如多人重复出现、任务完成率、出错位置、求助行为）",
+        "结果能落到可执行的修改建议，并说明优先级或验证方式",
+        "明确小样本定性测试的适用边界：擅长发现可用性问题，不宜据此推断整体用户比例或统计显著性"
+      ]
+    }
+  ],
+  "report": {
+    "id": "5c59a28a-d5fd-410f-84ee-081ae56b9ad4",
+    "session_id": "a2ea5351-e7f0-46da-a550-0f10342aa12f",
+    "status": "ready",
+    "is_mock": false,
+    "role_plan": [
+      {
+        "role": "llm_app",
+        "question_count": 2,
+        "primary": true
+      },
+      {
+        "role": "hardware",
+        "question_count": 1,
+        "primary": false
+      },
+      {
+        "role": "ux",
+        "question_count": 1,
+        "primary": false
+      }
+    ],
+    "total_score": 88.0,
+    "summary": "本场共完成 4 题，覆盖 LLM 应用方案设计与核心概念、硬件 SPI 排查、UX 可用性测试四个主题，均已评价，无跳过题。整体回答结构清晰、取舍与边界意识较好，主要缺口在底层原因解释、量化判据与测量误差边界。样本有限，不能代表整个岗位能力。",
+    "coverage": {
+      "asked": 4,
+      "scored": 4,
+      "planned": 4,
+      "skipped": 0,
+      "answered": 4,
+      "not_reached": 0
+    },
+    "dimension_scores": {
+      "reasoning": 4.38,
+      "relevance": 4.88,
+      "communication": 4.63,
+      "evidence_detail": 4.0,
+      "accuracy_consistency": 4.38
+    },
+    "weights": {
+      "reasoning": 25,
+      "relevance": 15,
+      "communication": 10,
+      "evidence_detail": 20,
+      "accuracy_consistency": 30
+    },
+    "strengths": [
+      {
+        "text": "方案取舍逻辑清晰，能给出成本边界与可操作的验证指标（Recall@k、MRR、延迟与费用）。",
+        "question_ids": [
+          "35bc5274-b29e-489f-b9be-15675c0799ec"
+        ]
+      },
+      {
+        "text": "RAG 流程、动机与失效边界表述准确，并主动补充分维度评测思路。",
+        "question_ids": [
+          "7b4b4dc7-6d12-41ad-b2ca-b22d4fc7f90b"
+        ]
+      }
+    ],
+    "gaps": [
+      {
+        "text": "硬件排查未区分电平匹配方向性风险（超压损坏 vs 高电平识别不足），也缺波形判据与测量误差边界。",
+        "question_ids": [
+          "def261a7-89fd-41b8-9217-d8802a1ece2f"
+        ]
+      },
+      {
+        "text": "可用性测试未定义任务成功判定标准与样本量依据，区分设计问题与个体差异缺量化维度。",
+        "question_ids": [
+          "c04032a8-f46a-4213-a9c0-13476ad96cf3"
+        ]
+      }
+    ],
+    "recommendations": [
+      {
+        "text": "练习时补一句因果总结并解释向量检索对数字编号不敏感的底层原因，同时说明融合策略与重排候选量对延迟的影响。",
+        "question_ids": [
+          "7b4b4dc7-6d12-41ad-b2ca-b22d4fc7f90b",
+          "35bc5274-b29e-489f-b9be-15675c0799ec"
+        ]
+      },
+      {
+        "text": "针对硬件题做一次专项复盘：按 MCU→Flash 与 Flash→MCU 两个方向分别写出风险与对应电平转换方案。",
+        "question_ids": [
+          "def261a7-89fd-41b8-9217-d8802a1ece2f"
+        ]
+      }
+    ],
+    "provider": "deepseek",
+    "model_name": "deepseek-flash",
+    "rubric_version": "rubric-1.1",
+    "prompt_version": "prompt-1.3",
+    "question_evaluations": [
+      {
+        "id": "249fdf1f-07f7-48db-af15-6c838839ce42",
+        "question_id": "7b4b4dc7-6d12-41ad-b2ca-b22d4fc7f90b",
+        "scope": "final",
+        "dimensions": {
+          "reasoning": {
+            "score": 4.5,
+            "reason": "逻辑清晰，从离线建索引到在线检索生成形成完整因果链，并给出失败情形的具体归因（检索遗漏、分块不合理、过期文档、权限过滤错误、上下文过长），还提出分维度评测（检索召回与回答忠实度）的验证思路，体现工程取舍意识。",
+            "evidence": [
+              {
+                "quote": "我会用带标准来源的小型验证集分别测检索召回和回答忠实度，资料不足时明确说明。",
+                "message_id": "85ae1f79-b6a7-46bd-8fe5-7fb2f614f811"
+              }
+            ]
+          },
+          "relevance": {
+            "score": 5.0,
+            "reason": "回答完整覆盖题目要求的三部分：RAG 工作流程、相比直接问大模型要解决的问题、效果不理想的情况，并额外补充了评测思路，未偏题。",
+            "evidence": [
+              {
+                "quote": "RAG 先对资料清洗分块并建立向量或关键词索引。用户提问后进行检索、必要时重排，再把相关片段连同来源放入提示词，模型据此生成带引用的回答。",
+                "message_id": "85ae1f79-b6a7-46bd-8fe5-7fb2f614f811"
+              }
+            ]
+          },
+          "communication": {
+            "score": 5.0,
+            "reason": "表达简洁、结构清楚，按流程—动机—边界—评测的顺序组织，术语使用准确，易于理解。",
+            "evidence": [
+              {
+                "quote": "练习回答：RAG 先对资料清洗分块并建立向量或关键词索引。",
+                "message_id": "85ae1f79-b6a7-46bd-8fe5-7fb2f614f811"
+              }
+            ]
+          },
+          "evidence_detail": {
+            "score": 4.0,
+            "reason": "给出了较具体的环节与失败场景，并提到带引用回答、权限过滤、分维度评测等实践细节；但均为概括性描述，缺少具体例子或量化说明，深度略欠。",
+            "evidence": [
+              {
+                "quote": "检索遗漏、分块不合理、过期文档、权限过滤错误或上下文过长都可能使效果变差。",
+                "message_id": "85ae1f79-b6a7-46bd-8fe5-7fb2f614f811"
+              }
+            ]
+          },
+          "accuracy_consistency": {
+            "score": 4.5,
+            "reason": "概念表述准确：链路（清洗分块→索引→检索→重排→拼入提示词→生成）、动机（补充外部/私有/时效知识、提供可追查依据）、边界（检索遗漏、分块不当、过期文档、上下文过长）均正确，且明确不保证消除幻觉，未把 RAG 与微调混淆。可进一步点明检索质量是核心前提这一因果表述，故未给满分。",
+            "evidence": [
+              {
+                "quote": "它主要补充模型不知道或已过时的领域资料，让回答有可追查依据；不保证完全消除幻觉。",
+                "message_id": "85ae1f79-b6a7-46bd-8fe5-7fb2f614f811"
+              }
+            ]
+          }
+        },
+        "missing_points": [
+          "未明确点出“检索质量是生成质量的关键前提”这一因果表述，仅列举失败情形",
+          "未提及问题需要多步推理时 RAG 效果受限的边界",
+          "未说明知识库本身缺失或过时导致无法检索到正确内容的情形（仅提到过期文档）"
+        ],
+        "suggestion": "可在列举失败情形后补一句因果总结，如“检索不到或检索到无关内容时，生成质量会直接下降”，并补充多步推理类问题与知识库缺失两类边界，使边界说明更完整。",
+        "flag": "normal",
+        "question_score": 90.5,
+        "context_hash": "9a329eb0d4f966b19f9f2dff9b4852e21fa506721c5abf0e333c81aaa3db17dc",
+        "rubric_version": "rubric-1.1",
+        "prompt_version": "prompt-1.3",
+        "model_name": "deepseek-flash",
+        "question": "请用你自己的话说明 RAG（检索增强生成）的基本工作流程：从用户提问到模型给出回答，中间大致经历哪几个步骤？并说明相比直接把问题交给大模型回答，RAG 主要想解决什么问题、在什么情况下效果可能不理想。",
+        "ordinal": 1,
+        "role": "llm_app",
+        "topic": "核心概念与实践",
+        "hint_used": false
+      },
+      {
+        "id": "2cfda478-77ef-4b0e-8820-484c35d3c0d7",
+        "question_id": "35bc5274-b29e-489f-b9be-15675c0799ec",
+        "scope": "final",
+        "dimensions": {
+          "reasoning": {
+            "score": 4.5,
+            "reason": "取舍逻辑清晰：以关键词为便宜基线、向量补语义、合并去重后重排，并给出“知识库很小或关键词已足够准确时未必值得”的成本边界，体现按场景权衡而非套用最优方案。",
+            "evidence": [
+              {
+                "quote": "重排增加时延和成本，知识库很小或关键词已足够准确时未必值得。",
+                "message_id": "9dfacdbb-c2fe-43e8-817b-3188784ab7d8"
+              }
+            ]
+          },
+          "relevance": {
+            "score": 5.0,
+            "reason": "回答完整覆盖题目要求：选型（混合检索为候选、关键词为基线）、各方案擅长与失效边界、验证方法，且紧扣型号/错误码/内部术语的企业知识库场景。",
+            "evidence": [
+              {
+                "quote": "我会以混合检索作为候选，先建立关键词检索的便宜基线，再用向量召回补充同义表达，合并去重后在延迟预算内重排。",
+                "message_id": "9dfacdbb-c2fe-43e8-817b-3188784ab7d8"
+              }
+            ]
+          },
+          "communication": {
+            "score": 4.5,
+            "reason": "结构清晰、术语使用准确，按选型—擅长—失效—验证的顺序展开，表达简洁无冗余。",
+            "evidence": [
+              {
+                "quote": "型号与错误码优先保持精确词项匹配，分词器要保护完整编号",
+                "message_id": "9dfacdbb-c2fe-43e8-817b-3188784ab7d8"
+              }
+            ]
+          },
+          "evidence_detail": {
+            "score": 4.5,
+            "reason": "给出可操作的验证方案：构造含精确编号、同义改写、无答案问题的标注集，对照 Recall@k、MRR、来源忠实度、p95 延迟与费用，并做消融比较。指标与场景对应明确，未虚构实验结果。",
+            "evidence": [
+              {
+                "quote": "我会构造包含精确编号、同义改写和无答案问题的标注验证集，对照 Recall@k、MRR、最终回答的来源忠实度、p95 延迟与调用费用，按场景做消融比较，确定阈值后再上线。",
+                "message_id": "9dfacdbb-c2fe-43e8-817b-3188784ab7d8"
+              }
+            ]
+          },
+          "accuracy_consistency": {
+            "score": 4.5,
+            "reason": "概念表述准确：向量检索擅长语义相近、关键词擅长精确匹配、重排带来时延成本，未把任一方案当普适最优。对向量检索混淆相似型号、BM25 对同义改写漏召回等失效边界判断正确。略欠的是未点明向量检索对罕见专有名词/数字不敏感的底层原因，但整体无错误。",
+            "evidence": [
+              {
+                "quote": "向量检索适合语义相近但措辞不同的问法，却可能混淆相似型号。BM25 对精确关键词有优势，但对同义词和简略问法可能漏召回。",
+                "message_id": "9dfacdbb-c2fe-43e8-817b-3188784ab7d8"
+              }
+            ]
+          }
+        },
+        "missing_points": [
+          "未说明向量检索对罕见专有名词和数字不敏感的底层原因（如嵌入模型训练分布、分词/子词切分导致编号语义弱）",
+          "未提及混合检索的融合方式（如 RRF 或加权分数融合）及其对结果的影响",
+          "未说明重排模型选型与延迟预算的具体权衡方式（如候选数量、批处理）"
+        ],
+        "suggestion": "可补充混合检索的融合策略（如 RRF/加权融合）与重排候选数量对延迟的影响，并解释向量检索为何对数字编号不敏感，使取舍依据更完整。",
+        "flag": "normal",
+        "question_score": 91.5,
+        "context_hash": "310accca659147de2d67f7f6acc1ddd01514fa865c42d95ff04ed20cb1b43dc1",
+        "rubric_version": "rubric-1.1",
+        "prompt_version": "prompt-1.3",
+        "model_name": "deepseek-flash",
+        "question": "在 RAG 系统中，检索环节通常有“向量检索”“关键词检索（如 BM25）”“混合检索加重排”几种方案。假设你要为一个包含大量产品型号、错误码和内部术语的企业知识库设计检索方案，请说明你会怎么选，并讲清取舍依据：各方案分别擅长什么、在什么情况下会失效，你会用什么方式验证选型是否合适。",
+        "ordinal": 2,
+        "role": "llm_app",
+        "topic": "方案设计与取舍",
+        "hint_used": false
+      },
+      {
+        "id": "a3a68df6-51ca-40f9-8609-454d578cd900",
+        "question_id": "def261a7-89fd-41b8-9217-d8802a1ece2f",
+        "scope": "final",
+        "dimensions": {
+          "reasoning": {
+            "score": 4.0,
+            "reason": "给出了可验证的排查顺序：先静态核对与手册确认，再上电测供电/复位/片选，再用逻辑分析仪看总线并降速验证，最后看模拟波形与交叉验证；并强调每次只改一个条件、记录结果，体现了归因逻辑。但各分支的判据边界（如如何从波形区分模式错误与信号完整性问题）展开不够具体。",
+            "evidence": [
+              {
+                "quote": "每次只改一个条件并记录结果，逻辑分析仪读到 0xFF 不能排除模拟波形或电源问题，最终用已知正常器件交叉验证",
+                "message_id": "9c277ce8-35e9-4696-b0b9-1f748fc7d8f7"
+              }
+            ]
+          },
+          "relevance": {
+            "score": 4.5,
+            "reason": "回答紧扣题目要求，覆盖了原理图/焊接核对、供电与上电时序、电平匹配、SPI 模式与速率、信号完整性以及交叉验证，基本逐项回应了题目列出的排查方向。",
+            "evidence": [
+              {
+                "quote": "我会先断电核对原理图、焊接方向、连通性和两端数据手册，确认 3.3V MCU 与 1.8V Flash 之间有合适的双向或分向电平转换",
+                "message_id": "9c277ce8-35e9-4696-b0b9-1f748fc7d8f7"
+              }
+            ]
+          },
+          "communication": {
+            "score": 4.5,
+            "reason": "表述条理清晰、按排查阶段推进，用词准确，明确表达了不确定性边界，未把单一原因当作结论。",
+            "evidence": [
+              {
+                "quote": "若无返回，区分未选中、接线或转换器方向错误及器件未就绪；若降速有效，再检查示波器波形、过冲振铃和回流路径",
+                "message_id": "9c277ce8-35e9-4696-b0b9-1f748fc7d8f7"
+              }
+            ]
+          },
+          "evidence_detail": {
+            "score": 3.5,
+            "reason": "提到了万用表、示波器、逻辑分析仪及具体测量对象（供电、纹波、复位、片选、SCK/MOSI/MISO），并提到核对读 ID 指令与采样边沿，具备一定操作性。但缺少探头带宽、接地方式等测量误差边界，也未给出具体判据阈值或波形特征描述。",
+            "evidence": [
+              {
+                "quote": "上电后用万用表和示波器在芯片引脚处测供电、纹波、复位及片选，核对上电等待时间。再用逻辑分析仪观察片选、SCK、MOSI、MISO",
+                "message_id": "9c277ce8-35e9-4696-b0b9-1f748fc7d8f7"
+              }
+            ]
+          },
+          "accuracy_consistency": {
+            "score": 4.0,
+            "reason": "技术判断总体准确：0xFF 提示数据线可能持续为高、不能直接判定芯片损坏、需核对电平转换与耐压、降速验证、逻辑分析仪读数不能排除模拟问题，均成立。不足在于未明确说明 3.3V 输出直连 1.8V 输入可能超压损坏，也未区分 MISO 方向（1.8V 输出到 3.3V 输入可能高电平识别不足）这一关键边界。",
+            "evidence": [
+              {
+                "quote": "0xFF 只能提示数据线可能一直为高，不能直接判定芯片损坏",
+                "message_id": "9c277ce8-35e9-4696-b0b9-1f748fc7d8f7"
+              },
+              {
+                "quote": "各引脚没有超额定电压",
+                "message_id": "9c277ce8-35e9-4696-b0b9-1f748fc7d8f7"
+              }
+            ]
+          }
+        },
+        "missing_points": [
+          "未明确 3.3V 输出直连 1.8V 输入可能超压损坏，以及 MISO 方向 1.8V 输出到 3.3V 输入可能高电平识别不足的方向性差异",
+          "未说明用示波器/逻辑分析仪测量时的探头带宽、接地方式等测量误差边界",
+          "未给出区分 SPI 模式错误与信号完整性问题的具体波形判据（如采样边沿数据是否稳定、过冲幅度）",
+          "未提及上电时序的具体判据（如 Flash 就绪时间、复位释放与片选先后关系）"
+        ],
+        "suggestion": "补充电平匹配的方向性分析：分别说明 MCU→Flash 与 Flash→MCU 两个方向的风险（超压损坏 vs 高电平识别不足），并给出对应的电平转换或分压/耐压确认方案。",
+        "flag": "normal",
+        "question_score": 80.5,
+        "context_hash": "058accbd37bee53d66935e220eb4f0b56750bed5bfec184223c9572a7ee86e6b",
+        "rubric_version": "rubric-1.1",
+        "prompt_version": "prompt-1.3",
+        "model_name": "deepseek-flash",
+        "question": "请围绕硬件调试中的一个具体能力点来回答：假设一块数字板卡上有一颗 3.3V 供电的 MCU 与一颗 1.8V 供电的 Flash，二者通过 SPI 通信，上电后 MCU 能正常启动，但读 Flash 的 ID 始终返回 0xFF。请说明你会如何定位问题：先做哪些测量与检查、如何判断问题出在电源/上电时序、电平匹配、SPI 时序（模式、时钟极性/相位、速率）还是信号完整性（如过冲、振铃、走线回流）上，并讲清每一步的依据和判断边界。",
+        "ordinal": 3,
+        "role": "hardware",
+        "topic": "核心概念与实践",
+        "hint_used": false
+      },
+      {
+        "id": "10fa6ab2-4aa1-4bbc-9d7e-e3e6f895c517",
+        "question_id": "c04032a8-f46a-4213-a9c0-13476ad96cf3",
+        "scope": "final",
+        "dimensions": {
+          "reasoning": {
+            "score": 4.5,
+            "reason": "推理链条清晰：先定目标再定招募与任务，观察后先排除任务描述、环境与原型限制等干扰因素，再以多人重复出现与事后访谈交叉判断，最后按严重程度排序并复测验证，逻辑自洽。扣分点在于“区分失误与设计问题”的依据虽提到重复性，但未展开任务完成率、出错位置分布等更可操作的判定维度。",
+            "evidence": [
+              {
+                "quote": "遇到失误先核对任务描述、环境和原型限制，再结合多个参与者在同一节点的重复问题与事后访谈判断，不能简单责怪用户",
+                "message_id": "cf652b24-3e01-4d58-a959-dd655b213dfc"
+              }
+            ]
+          },
+          "relevance": {
+            "score": 5.0,
+            "reason": "回答完整覆盖题目要求的五个方面：招募对象、典型任务、观察记录、区分失误与设计问题、结果转化，以及小样本结论边界，没有跑题或遗漏子问题。",
+            "evidence": [
+              {
+                "quote": "先明确本轮目标是发现结算流程障碍，而非证明转化率提升",
+                "message_id": "cf652b24-3e01-4d58-a959-dd655b213dfc"
+              }
+            ]
+          },
+          "communication": {
+            "score": 4.5,
+            "reason": "表达紧凑、结构按题目子问题顺序推进，术语使用恰当且无堆砌，边界陈述明确。个别句子信息密度较高，但整体清晰可读。",
+            "evidence": [
+              {
+                "quote": "将发现归纳为具体界面位置、触发条件、证据、严重程度和修改建议，优先修复阻断付款或价格误解的问题，再对修改后的原型复测",
+                "message_id": "cf652b24-3e01-4d58-a959-dd655b213dfc"
+              }
+            ]
+          },
+          "evidence_detail": {
+            "score": 4.0,
+            "reason": "给出了较具体的操作细节：覆盖新老用户与不同熟悉程度、知情同意、原型加虚构订单、不提示按钮位置的任务示例（修改地址、优惠券后确认总价）、记录完成情况/错误路径/犹豫点/求助/用时/原话、发现归纳为界面位置+触发条件+证据+严重程度+建议。细节充分但任务成功判定标准与记录模板仍偏概括。",
+            "evidence": [
+              {
+                "quote": "记录完成情况、错误路径、犹豫点、求助、任务用时与参与者原话",
+                "message_id": "cf652b24-3e01-4d58-a959-dd655b213dfc"
+              }
+            ]
+          },
+          "accuracy_consistency": {
+            "score": 4.5,
+            "reason": "方法学表述准确：目标定位为发现问题而非验证转化、使用原型与虚构订单避免真实付款、主持人中立、多参与者重复问题作为设计问题依据、小样本不能推断发生率或统计显著性，均符合可用性测试实践。轻微不足是未提及任务成功判定标准的具体定义（如独立完成/需协助完成的分级），也未说明样本量依据。",
+            "evidence": [
+              {
+                "quote": "小样本能发现高频交互障碍并提出改进假设，不能代表所有用户、估算精确发生率或证明商业指标提升",
+                "message_id": "cf652b24-3e01-4d58-a959-dd655b213dfc"
+              }
+            ]
+          }
+        },
+        "missing_points": [
+          "任务成功与否的判定标准未明确定义（如独立完成、需提示完成、失败的分级）",
+          "未说明样本量选择依据（如小样本迭代测试的常见做法）",
+          "区分设计问题与个体差异时可补充任务完成率、出错位置分布等量化观察维度",
+          "未提及测试脚本/主持指南或试点预测试等执行保障"
+        ],
+        "suggestion": "补充任务成功判定标准与样本量依据：为每个任务定义“独立完成/需提示完成/失败”的判定规则，并说明为何选该数量参与者（如按迭代测试经验先跑一轮再按发现的问题决定是否补测），使测试可复现、结论可对照。",
+        "flag": "normal",
+        "question_score": 89.5,
+        "context_hash": "54c0d8393451efcb2823574946922da3501232e43659cd2ea2f4e64143667c79",
+        "rubric_version": "rubric-1.1",
+        "prompt_version": "prompt-1.3",
+        "model_name": "deepseek-flash",
+        "question": "请围绕可用性测试中的一个具体做法来回答：假设你要为一个已有一定用户量的移动端 App 重新设计“下单结算”流程，在正式改版上线前，你想通过一轮小规模的可用性测试来发现新流程中的问题。请说明你会怎样设计并执行这轮测试：招募什么样的参与者、设置哪些典型任务、观察和记录哪些指标或现象、如何区分“用户操作失误”与“设计本身的问题”，以及测试结果怎样转化为具体的修改建议。同时请说明这种小样本可用性测试能得出什么结论、不能得出什么结论。",
+        "ordinal": 4,
+        "role": "ux",
+        "topic": "核心概念与实践",
+        "hint_used": false
+      }
+    ],
+    "messages": [
+      {
+        "id": "c929e91d-c905-47a4-8de9-24c8cce5379f",
+        "seq": 1,
+        "speaker": "assistant",
+        "kind": "question",
+        "content": "请用你自己的话说明 RAG（检索增强生成）的基本工作流程：从用户提问到模型给出回答，中间大致经历哪几个步骤？并说明相比直接把问题交给大模型回答，RAG 主要想解决什么问题、在什么情况下效果可能不理想。",
+        "question_id": "7b4b4dc7-6d12-41ad-b2ca-b22d4fc7f90b",
+        "operation_id": "88aece2e-259d-4874-8080-839ea93a23a4",
+        "created_at": "2026-11-15T16:42:41.404159+00:00"
+      },
+      {
+        "id": "85ae1f79-b6a7-46bd-8fe5-7fb2f614f811",
+        "seq": 2,
+        "speaker": "user",
+        "kind": "answer",
+        "content": "练习回答：RAG 先对资料清洗分块并建立向量或关键词索引。用户提问后进行检索、必要时重排，再把相关片段连同来源放入提示词，模型据此生成带引用的回答。它主要补充模型不知道或已过时的领域资料，让回答有可追查依据；不保证完全消除幻觉。检索遗漏、分块不合理、过期文档、权限过滤错误或上下文过长都可能使效果变差。我会用带标准来源的小型验证集分别测检索召回和回答忠实度，资料不足时明确说明。",
+        "question_id": "7b4b4dc7-6d12-41ad-b2ca-b22d4fc7f90b",
+        "operation_id": "9676c67a-d6d8-49fe-b896-ff7b9cda81db",
+        "created_at": "2026-11-15T16:43:54.305252+00:00"
+      },
+      {
+        "id": "c92488c4-9502-421b-b826-e931545e307e",
+        "seq": 3,
+        "speaker": "assistant",
+        "kind": "question",
+        "content": "在 RAG 系统中，检索环节通常有“向量检索”“关键词检索（如 BM25）”“混合检索加重排”几种方案。假设你要为一个包含大量产品型号、错误码和内部术语的企业知识库设计检索方案，请说明你会怎么选，并讲清取舍依据：各方案分别擅长什么、在什么情况下会失效，你会用什么方式验证选型是否合适。",
+        "question_id": "35bc5274-b29e-489f-b9be-15675c0799ec",
+        "operation_id": "9676c67a-d6d8-49fe-b896-ff7b9cda81db",
+        "created_at": "2026-11-15T16:44:05.626506+00:00"
+      },
+      {
+        "id": "9dfacdbb-c2fe-43e8-817b-3188784ab7d8",
+        "seq": 4,
+        "speaker": "user",
+        "kind": "answer",
+        "content": "练习回答：我会以混合检索作为候选，先建立关键词检索的便宜基线，再用向量召回补充同义表达，合并去重后在延迟预算内重排。型号与错误码优先保持精确词项匹配，分词器要保护完整编号；向量检索适合语义相近但措辞不同的问法，却可能混淆相似型号。BM25 对精确关键词有优势，但对同义词和简略问法可能漏召回。重排增加时延和成本，知识库很小或关键词已足够准确时未必值得。我会构造包含精确编号、同义改写和无答案问题的标注验证集，对照 Recall@k、MRR、最终回答的来源忠实度、p95 延迟与调用费用，按场景做消融比较，确定阈值后再上线。",
+        "question_id": "35bc5274-b29e-489f-b9be-15675c0799ec",
+        "operation_id": "7eb753bc-dd6b-4205-9730-c22ad3dacf39",
+        "created_at": "2026-11-15T16:47:50.123964+00:00"
+      },
+      {
+        "id": "c9dd5664-7a86-4077-a879-dd3100b81e40",
+        "seq": 5,
+        "speaker": "assistant",
+        "kind": "question",
+        "content": "请围绕硬件调试中的一个具体能力点来回答：假设一块数字板卡上有一颗 3.3V 供电的 MCU 与一颗 1.8V 供电的 Flash，二者通过 SPI 通信，上电后 MCU 能正常启动，但读 Flash 的 ID 始终返回 0xFF。请说明你会如何定位问题：先做哪些测量与检查、如何判断问题出在电源/上电时序、电平匹配、SPI 时序（模式、时钟极性/相位、速率）还是信号完整性（如过冲、振铃、走线回流）上，并讲清每一步的依据和判断边界。",
+        "question_id": "def261a7-89fd-41b8-9217-d8802a1ece2f",
+        "operation_id": "7eb753bc-dd6b-4205-9730-c22ad3dacf39",
+        "created_at": "2026-11-15T16:49:35.402546+00:00"
+      },
+      {
+        "id": "9c277ce8-35e9-4696-b0b9-1f748fc7d8f7",
+        "seq": 6,
+        "speaker": "user",
+        "kind": "answer",
+        "content": "练习回答：0xFF 只能提示数据线可能一直为高，不能直接判定芯片损坏。我会先断电核对原理图、焊接方向、连通性和两端数据手册，确认 3.3V MCU 与 1.8V Flash 之间有合适的双向或分向电平转换，各引脚没有超额定电压。上电后用万用表和示波器在芯片引脚处测供电、纹波、复位及片选，核对上电等待时间。再用逻辑分析仪观察片选、SCK、MOSI、MISO，核对读 ID 指令、SPI 模式、采样边沿与时钟速率，先降速验证。若无返回，区分未选中、接线或转换器方向错误及器件未就绪；若降速有效，再检查示波器波形、过冲振铃和回流路径。每次只改一个条件并记录结果，逻辑分析仪读到 0xFF 不能排除模拟波形或电源问题，最终用已知正常器件交叉验证。",
+        "question_id": "def261a7-89fd-41b8-9217-d8802a1ece2f",
+        "operation_id": "d32dca28-2871-4623-a39e-ee3bf3ed5914",
+        "created_at": "2026-11-15T16:52:57.041021+00:00"
+      },
+      {
+        "id": "dab4b550-8a48-47f1-bc29-c2e0f23adf07",
+        "seq": 7,
+        "speaker": "assistant",
+        "kind": "question",
+        "content": "请围绕可用性测试中的一个具体做法来回答：假设你要为一个已有一定用户量的移动端 App 重新设计“下单结算”流程，在正式改版上线前，你想通过一轮小规模的可用性测试来发现新流程中的问题。请说明你会怎样设计并执行这轮测试：招募什么样的参与者、设置哪些典型任务、观察和记录哪些指标或现象、如何区分“用户操作失误”与“设计本身的问题”，以及测试结果怎样转化为具体的修改建议。同时请说明这种小样本可用性测试能得出什么结论、不能得出什么结论。",
+        "question_id": "c04032a8-f46a-4213-a9c0-13476ad96cf3",
+        "operation_id": "d32dca28-2871-4623-a39e-ee3bf3ed5914",
+        "created_at": "2026-11-15T16:53:11.157186+00:00"
+      },
+      {
+        "id": "cf652b24-3e01-4d58-a959-dd655b213dfc",
+        "seq": 8,
+        "speaker": "user",
+        "kind": "answer",
+        "content": "练习回答：先明确本轮目标是发现结算流程障碍，而非证明转化率提升。招募覆盖新老用户、不同熟悉程度且符合目标人群的少量参与者，取得知情同意，使用原型和虚构订单，不要求真实付款。给出有实际目标但不提示按钮位置的任务，例如修改地址、使用优惠券后确认总价；主持人保持中立，鼓励边操作边说出想法，记录完成情况、错误路径、犹豫点、求助、任务用时与参与者原话。遇到失误先核对任务描述、环境和原型限制，再结合多个参与者在同一节点的重复问题与事后访谈判断，不能简单责怪用户。将发现归纳为具体界面位置、触发条件、证据、严重程度和修改建议，优先修复阻断付款或价格误解的问题，再对修改后的原型复测。小样本能发现高频交互障碍并提出改进假设，不能代表所有用户、估算精确发生率或证明商业指标提升；后者需更多样本或上线实验。",
+        "question_id": "c04032a8-f46a-4213-a9c0-13476ad96cf3",
+        "operation_id": "6dcc65e5-6701-4629-918e-60e47c8e11d5",
+        "created_at": "2026-11-15T16:54:49.386336+00:00"
+      },
+      {
+        "id": "80dc5409-b22e-44c7-81d6-d03ff9dfc90d",
+        "seq": 9,
+        "speaker": "assistant",
+        "kind": "notice",
+        "content": "本次问答与证据评价已保存，正在整理训练报告。评分只供练习参考。",
+        "question_id": null,
+        "operation_id": "6dcc65e5-6701-4629-918e-60e47c8e11d5",
+        "created_at": "2026-11-15T16:59:48.563436+00:00"
+      }
+    ]
+  },
+  "trace": {
+    "items": [
+      {
+        "id": "8525db46-15f5-4219-ac5d-c318d5693e87",
+        "skill_key": "technical",
+        "skill_version": "1.0",
+        "phase": "question",
+        "status": "succeeded",
+        "provider": "deepseek",
+        "model_name": "deepseek-flash",
+        "attempt_no": 1,
+        "usage": {
+          "attempts": 1,
+          "latency_ms": 2965,
+          "input_tokens": 1126,
+          "output_tokens": 224,
+          "input_cache_hit_tokens": 128,
+          "input_cache_miss_tokens": 998,
+          "upstream_first_content_ms": 1311
+        },
+        "error_code": null,
+        "input_refs": {
+          "message_ids": [],
+          "summary_used": false,
+          "prompt_version": "prompt-1.3",
+          "rubric_version": "rubric-1.1",
+          "memory_revision": 1,
+          "profile_version": 1,
+          "current_profile_version": 1
+        }
+      },
+      {
+        "id": "e4dd1268-fbc2-4179-aed0-f5bbca81ce11",
+        "skill_key": "technical",
+        "skill_version": "1.0",
+        "phase": "evaluate",
+        "status": "succeeded",
+        "provider": "deepseek",
+        "model_name": "deepseek-flash",
+        "attempt_no": 1,
+        "usage": {
+          "attempts": 1,
+          "latency_ms": 7233,
+          "input_tokens": 2751,
+          "output_tokens": 816,
+          "input_cache_hit_tokens": 256,
+          "input_cache_miss_tokens": 2495,
+          "upstream_first_content_ms": 1156
+        },
+        "error_code": null,
+        "input_refs": {
+          "message_ids": [
+            "c929e91d-c905-47a4-8de9-24c8cce5379f",
+            "85ae1f79-b6a7-46bd-8fe5-7fb2f614f811"
+          ],
+          "summary_used": true,
+          "prompt_version": "prompt-1.3",
+          "rubric_version": "rubric-1.1",
+          "memory_revision": 1,
+          "profile_version": 1,
+          "current_profile_version": 1
+        }
+      },
+      {
+        "id": "3229ee2c-5d03-4a19-a04a-1ddf2a79d906",
+        "skill_key": "technical",
+        "skill_version": "1.0",
+        "phase": "question",
+        "status": "succeeded",
+        "provider": "deepseek",
+        "model_name": "deepseek-flash",
+        "attempt_no": 1,
+        "usage": {
+          "attempts": 1,
+          "latency_ms": 3326,
+          "input_tokens": 1902,
+          "output_tokens": 266,
+          "input_cache_hit_tokens": 512,
+          "input_cache_miss_tokens": 1390,
+          "upstream_first_content_ms": 1129
+        },
+        "error_code": null,
+        "input_refs": {
+          "message_ids": [
+            "c929e91d-c905-47a4-8de9-24c8cce5379f",
+            "85ae1f79-b6a7-46bd-8fe5-7fb2f614f811"
+          ],
+          "summary_used": true,
+          "prompt_version": "prompt-1.3",
+          "rubric_version": "rubric-1.1",
+          "memory_revision": 1,
+          "profile_version": 1,
+          "current_profile_version": 1
+        }
+      },
+      {
+        "id": "347f5cfb-4e5b-4923-8a40-270d1c969ff2",
+        "skill_key": "technical",
+        "skill_version": "1.0",
+        "phase": "evaluate",
+        "status": "succeeded",
+        "provider": "deepseek",
+        "model_name": "deepseek-flash",
+        "attempt_no": 1,
+        "usage": {
+          "attempts": 1,
+          "latency_ms": 8193,
+          "input_tokens": 3235,
+          "output_tokens": 967,
+          "input_cache_hit_tokens": 1408,
+          "input_cache_miss_tokens": 1827,
+          "upstream_first_content_ms": 1461
+        },
+        "error_code": null,
+        "input_refs": {
+          "message_ids": [
+            "c92488c4-9502-421b-b826-e931545e307e",
+            "9dfacdbb-c2fe-43e8-817b-3188784ab7d8"
+          ],
+          "summary_used": true,
+          "prompt_version": "prompt-1.3",
+          "rubric_version": "rubric-1.1",
+          "memory_revision": 1,
+          "profile_version": 1,
+          "current_profile_version": 1
+        }
+      },
+      {
+        "id": "4b35c10c-2bea-42db-b2bc-0b97a59d26a6",
+        "skill_key": "technical",
+        "skill_version": "1.0",
+        "phase": "question",
+        "status": "failed",
+        "provider": "deepseek",
+        "model_name": "deepseek-flash",
+        "attempt_no": 1,
+        "usage": {
+          "attempts": null,
+          "latency_ms": null,
+          "input_tokens": null,
+          "output_tokens": null,
+          "input_cache_hit_tokens": null,
+          "input_cache_miss_tokens": null,
+          "upstream_first_content_ms": null
+        },
+        "error_code": "MODEL_OUTPUT_INVALID",
+        "input_refs": {
+          "message_ids": [
+            "c92488c4-9502-421b-b826-e931545e307e",
+            "9dfacdbb-c2fe-43e8-817b-3188784ab7d8"
+          ],
+          "summary_used": true,
+          "prompt_version": "prompt-1.3",
+          "rubric_version": "rubric-1.1",
+          "memory_revision": 1,
+          "profile_version": 1,
+          "current_profile_version": 1
+        }
+      },
+      {
+        "id": "25b5e282-6958-446b-b4b8-88fee216462c",
+        "skill_key": "technical",
+        "skill_version": "1.0",
+        "phase": "evaluate",
+        "status": "succeeded",
+        "provider": "deepseek",
+        "model_name": "deepseek-flash",
+        "attempt_no": 2,
+        "usage": {
+          "attempts": 1,
+          "latency_ms": 7071,
+          "input_tokens": 3235,
+          "output_tokens": 836,
+          "input_cache_hit_tokens": 3072,
+          "input_cache_miss_tokens": 163,
+          "upstream_first_content_ms": 1096
+        },
+        "error_code": null,
+        "input_refs": {
+          "message_ids": [
+            "c92488c4-9502-421b-b826-e931545e307e",
+            "9dfacdbb-c2fe-43e8-817b-3188784ab7d8"
+          ],
+          "summary_used": true,
+          "prompt_version": "prompt-1.3",
+          "rubric_version": "rubric-1.1",
+          "memory_revision": 1,
+          "profile_version": 1,
+          "current_profile_version": 1
+        }
+      },
+      {
+        "id": "8f00ead1-35f5-4a80-8366-060ea24463d6",
+        "skill_key": "technical",
+        "skill_version": "1.0",
+        "phase": "question",
+        "status": "succeeded",
+        "provider": "deepseek",
+        "model_name": "deepseek-flash",
+        "attempt_no": 2,
+        "usage": {
+          "attempts": 1,
+          "latency_ms": 4411,
+          "input_tokens": 2331,
+          "output_tokens": 350,
+          "input_cache_hit_tokens": 2176,
+          "input_cache_miss_tokens": 155,
+          "upstream_first_content_ms": 1460
+        },
+        "error_code": null,
+        "input_refs": {
+          "message_ids": [
+            "c92488c4-9502-421b-b826-e931545e307e",
+            "9dfacdbb-c2fe-43e8-817b-3188784ab7d8"
+          ],
+          "summary_used": true,
+          "prompt_version": "prompt-1.3",
+          "rubric_version": "rubric-1.1",
+          "memory_revision": 1,
+          "profile_version": 1,
+          "current_profile_version": 1
+        }
+      },
+      {
+        "id": "9bbd1de5-d595-4870-842b-af4b9e45d0fb",
+        "skill_key": "technical",
+        "skill_version": "1.0",
+        "phase": "evaluate",
+        "status": "succeeded",
+        "provider": "deepseek",
+        "model_name": "deepseek-flash",
+        "attempt_no": 1,
+        "usage": {
+          "attempts": 1,
+          "latency_ms": 9531,
+          "input_tokens": 3959,
+          "output_tokens": 1104,
+          "input_cache_hit_tokens": 1152,
+          "input_cache_miss_tokens": 2807,
+          "upstream_first_content_ms": 1254
+        },
+        "error_code": null,
+        "input_refs": {
+          "message_ids": [
+            "c9dd5664-7a86-4077-a879-dd3100b81e40",
+            "9c277ce8-35e9-4696-b0b9-1f748fc7d8f7"
+          ],
+          "summary_used": true,
+          "prompt_version": "prompt-1.3",
+          "rubric_version": "rubric-1.1",
+          "memory_revision": 1,
+          "profile_version": 1,
+          "current_profile_version": 1
+        }
+      },
+      {
+        "id": "d963cd8c-088b-45d7-b233-61bcabd2546b",
+        "skill_key": "technical",
+        "skill_version": "1.0",
+        "phase": "question",
+        "status": "succeeded",
+        "provider": "deepseek",
+        "model_name": "deepseek-flash",
+        "attempt_no": 1,
+        "usage": {
+          "attempts": 1,
+          "latency_ms": 3470,
+          "input_tokens": 1899,
+          "output_tokens": 272,
+          "input_cache_hit_tokens": 512,
+          "input_cache_miss_tokens": 1387,
+          "upstream_first_content_ms": 1192
+        },
+        "error_code": null,
+        "input_refs": {
+          "message_ids": [
+            "c9dd5664-7a86-4077-a879-dd3100b81e40",
+            "9c277ce8-35e9-4696-b0b9-1f748fc7d8f7"
+          ],
+          "summary_used": true,
+          "prompt_version": "prompt-1.3",
+          "rubric_version": "rubric-1.1",
+          "memory_revision": 1,
+          "profile_version": 1,
+          "current_profile_version": 1
+        }
+      },
+      {
+        "id": "62f47068-7133-4955-b155-68cd4897b7f5",
+        "skill_key": "technical",
+        "skill_version": "1.0",
+        "phase": "evaluate",
+        "status": "succeeded",
+        "provider": "deepseek",
+        "model_name": "deepseek-flash",
+        "attempt_no": 1,
+        "usage": {
+          "attempts": 1,
+          "latency_ms": 7491,
+          "input_tokens": 4197,
+          "output_tokens": 846,
+          "input_cache_hit_tokens": 1152,
+          "input_cache_miss_tokens": 3045,
+          "upstream_first_content_ms": 1246
+        },
+        "error_code": null,
+        "input_refs": {
+          "message_ids": [
+            "dab4b550-8a48-47f1-bc29-c2e0f23adf07",
+            "cf652b24-3e01-4d58-a959-dd655b213dfc"
+          ],
+          "summary_used": true,
+          "prompt_version": "prompt-1.3",
+          "rubric_version": "rubric-1.1",
+          "memory_revision": 1,
+          "profile_version": 1,
+          "current_profile_version": 1
+        }
+      },
+      {
+        "id": "3f7f0b7f-fbd6-4f9c-b1e0-b270eeccc286",
+        "skill_key": "review",
+        "skill_version": "1.0",
+        "phase": "review",
+        "status": "failed",
+        "provider": "deepseek",
+        "model_name": "deepseek-flash",
+        "attempt_no": 1,
+        "usage": {
+          "attempts": null,
+          "latency_ms": null,
+          "input_tokens": null,
+          "output_tokens": null,
+          "input_cache_hit_tokens": null,
+          "input_cache_miss_tokens": null,
+          "upstream_first_content_ms": null
+        },
+        "error_code": "MODEL_OUTPUT_INVALID",
+        "input_refs": {
+          "message_ids": [
+            "dab4b550-8a48-47f1-bc29-c2e0f23adf07",
+            "cf652b24-3e01-4d58-a959-dd655b213dfc"
+          ],
+          "summary_used": false,
+          "prompt_version": "prompt-1.3",
+          "rubric_version": "rubric-1.1",
+          "memory_revision": 1,
+          "profile_version": 1,
+          "current_profile_version": 1
+        }
+      },
+      {
+        "id": "c8a2aaf1-af30-4746-8655-cf1bb23e8d1a",
+        "skill_key": "technical",
+        "skill_version": "1.0",
+        "phase": "evaluate",
+        "status": "succeeded",
+        "provider": "deepseek",
+        "model_name": "deepseek-flash",
+        "attempt_no": 2,
+        "usage": {
+          "attempts": 1,
+          "latency_ms": 8094,
+          "input_tokens": 4197,
+          "output_tokens": 883,
+          "input_cache_hit_tokens": 3968,
+          "input_cache_miss_tokens": 229,
+          "upstream_first_content_ms": 1369
+        },
+        "error_code": null,
+        "input_refs": {
+          "message_ids": [
+            "dab4b550-8a48-47f1-bc29-c2e0f23adf07",
+            "cf652b24-3e01-4d58-a959-dd655b213dfc"
+          ],
+          "summary_used": true,
+          "prompt_version": "prompt-1.3",
+          "rubric_version": "rubric-1.1",
+          "memory_revision": 1,
+          "profile_version": 1,
+          "current_profile_version": 1
+        }
+      },
+      {
+        "id": "e32a2ec2-5ccc-403f-a522-e831f52a9d17",
+        "skill_key": "review",
+        "skill_version": "1.0",
+        "phase": "review",
+        "status": "succeeded",
+        "provider": "deepseek",
+        "model_name": "deepseek-flash",
+        "attempt_no": 2,
+        "usage": {
+          "attempts": 1,
+          "latency_ms": 5185,
+          "input_tokens": 3270,
+          "output_tokens": 493,
+          "input_cache_hit_tokens": 128,
+          "input_cache_miss_tokens": 3142,
+          "upstream_first_content_ms": 1262
+        },
+        "error_code": null,
+        "input_refs": {
+          "message_ids": [
+            "dab4b550-8a48-47f1-bc29-c2e0f23adf07",
+            "cf652b24-3e01-4d58-a959-dd655b213dfc"
+          ],
+          "summary_used": false,
+          "prompt_version": "prompt-1.3",
+          "rubric_version": "rubric-1.1",
+          "memory_revision": 1,
+          "profile_version": 1,
+          "current_profile_version": 1
+        }
+      }
+    ],
+    "next_cursor": null
+  }
+}

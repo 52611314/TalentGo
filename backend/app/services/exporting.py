@@ -17,11 +17,14 @@ def export_report(db,user_id,sid,format):
     data=report_data(db,user_id,sid)
     if data['status']!='ready':raise AppError(409,'REPORT_NOT_READY','报告尚未生成，无法导出')
     session=owned_session(db,user_id,sid)
+    from app.core.roles import ROLE_BY_ID
     exported={'export_version':'1.0','title':session.title,'role':session.role,'mode':session.mode,
         'notice':'仅供训练参考；Mock 不是能力评分。分数不核实经历、不诊断心理、不预测录用。',**data}
     if format=='json':return json.dumps(exported,ensure_ascii=False,indent=2),'application/json'
     lines=['# TalentGo 训练报告',plain(session.title),'来源：',plain('Mock · 固定规则，不计能力分' if data['is_mock'] else data['model_name']),
-        f"模式：{session.role} / {session.mode}",f"Prompt：{data.get('prompt_version')}；rubric：{data.get('rubric_version')}",
+        f"岗位：{ROLE_BY_ID.get(session.role, {}).get('label', session.role)} / {session.mode}",
+        '题量分配：'+'；'.join(f"{ROLE_BY_ID[p['role']]['label']} {p['question_count']} 题（{'主选' if p['primary'] else '次选'}）" for p in data['role_plan']),
+        f"Prompt：{data.get('prompt_version')}；rubric：{data.get('rubric_version')}",
         exported['notice'],f"总分：{data['total_score'] if data['total_score'] is not None else '未计分'} / 100",'## 完成覆盖']
     lines += [f'- {key}: {value}' for key,value in data['coverage'].items()]
     lines += ['## 复盘摘要',plain(data['summary']),'## 维度分（0—5，缺失不是零）']
@@ -30,7 +33,7 @@ def export_report(db,user_id,sid,format):
         lines.append('## '+title)
         for item in data[name]:lines += [plain(item['text']), '来源题目：'+', '.join(item['question_ids'])]
     for q in data['question_evaluations']:
-        lines += [f"## 第 {q['ordinal']} 题 · {q['topic']}",plain(q['question']),
+        lines += [f"## 第 {q['ordinal']} 题 · {q['topic']} · {ROLE_BY_ID.get(q['role'], {}).get('label', q['role'])}",plain(q['question']),
             f"题分：{q['question_score'] if q['question_score'] is not None else '未计分'}；提示：{'使用过' if q['hint_used'] else '未使用'}"]
         for key,d in q['dimensions'].items():
             lines += [f"### {LABELS[key]}：{d['score'] if d['score'] is not None else '材料不足'}",plain(d['reason'])]

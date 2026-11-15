@@ -81,7 +81,7 @@ def api_flows(settings,role='frontend'):
             r=client.request(method,path,json=body,headers=headers)
             if r.status_code>=400:raise RuntimeError(r.json().get('error',{}).get('code','HTTP_ERROR'))
             return r.json()['data']
-        user=request('POST','/identity',{'display_name':'M5 合成场景与时延验证'})
+        user=request('POST','/auth/register',{'username':'scenario_'+secrets.token_hex(6),'password':secrets.token_urlsafe(24)})
         auth={'Authorization':'Bearer '+user['token']}
         def wait(oid):
             deadline=time.monotonic()+190
@@ -95,7 +95,7 @@ def api_flows(settings,role='frontend'):
         for mode,text in answers.items():
             started=time.monotonic();sid=None
             try:
-                state=request('POST','/sessions',{'title':'M5 合成闭环 · '+role+' · '+mode,'provider':'deepseek','role':role,'mode':mode,
+                state=request('POST','/sessions',{'title':'合成场景验证 · '+role+' · '+mode,'provider':'deepseek','role':role,'mode':mode,
                     'config':{'question_count':1,'max_followups':0,'pressure_consent':mode=='pressure'}},auth)
                 sid=state['id'];first=wait(request('POST',f'/sessions/{sid}/actions',{'action':'start','expected_version':state['version']},auth)['operation_id'])
                 state=request('GET',f'/sessions/{sid}',auth=auth)

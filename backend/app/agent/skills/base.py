@@ -27,7 +27,11 @@ class InterviewSkill:
                 raise ValueError('Generated topic must match this question rubric')
             if question.question in context.get('previous_questions', []):
                 raise ValueError('Do not repeat a main question')
-        return provider.generate(GeneratedQuestion, self.system() + '\n根据题目种子与画像生成一个主问题，topic 必须等于 seed.topic。',
+            if context['seed'].get('dynamic') and len(question.anchors) < 2:
+                raise ValueError('Provide at least two question-specific evaluation anchors')
+        return provider.generate(GeneratedQuestion, self.system() + '\n根据当前 role_label、role_focus、能力方向与画像实时生成一个岗位相关的主问题，topic 必须等于 seed.topic。'
+                                 '不能因为用户主岗位不同就偏离当前题的岗位。anchors 提供 2—6 条针对这道具体题的评价要点，不在 question 中泄露答案；'
+                                 '每次只聚焦一个可回答的问题，不要求无关专业知识。',
                                  context, check, validate)
 
     def evaluate(self, provider, context, check):

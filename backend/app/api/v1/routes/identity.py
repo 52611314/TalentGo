@@ -10,6 +10,8 @@ router = APIRouter(prefix='/identity', tags=['identity'])
 
 @router.post('', status_code=201)
 def create(body: IdentityCreate, db: DB, key: Key, request: Request):
+    if request.app.state.settings.app_env != 'test':
+        raise AppError(410, 'ACCOUNT_REGISTRATION_REQUIRED', '匿名身份创建已停用，请注册或登录账号')
     if len(key) < 43:
         raise AppError(422, 'VALIDATION_ERROR', '身份创建请求键至少为 43 个随机字符')
     return response(request, create_identity(db, body.display_name, key))
@@ -17,4 +19,4 @@ def create(body: IdentityCreate, db: DB, key: Key, request: Request):
 
 @router.get('/me')
 def me(user: CurrentUser, request: Request):
-    return response(request, {'user_id': str(user.id), 'display_name': user.display_name, 'status': user.status})
+    return response(request, {'user_id': str(user.id), 'username': user.username, 'display_name': user.display_name, 'status': user.status})

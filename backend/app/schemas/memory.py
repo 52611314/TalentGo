@@ -1,13 +1,14 @@
 from typing import Literal
 from pydantic import Field, model_validator
 from app.schemas.common import StrictModel
+from app.core.roles import Role
 
 
 class MemoryCreate(StrictModel):
     kind: Literal['goal', 'preference', 'weakness']
     topic: str = Field(min_length=1, max_length=80)
     content: str = Field(min_length=1, max_length=1200)
-    role: Literal['frontend', 'backend'] | None = None
+    role: Role | None = None
     mode: Literal['technical', 'behavioral', 'pressure'] | None = None
 
     @model_validator(mode='after')

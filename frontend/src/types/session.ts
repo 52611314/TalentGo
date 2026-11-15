@@ -1,4 +1,5 @@
-export type TargetRole = 'frontend' | 'backend'
+export type TargetRole = string
+export interface RoleAllocation { role: TargetRole; question_count: number; primary: boolean }
 export type ExperienceLevel = 'beginner' | 'intern' | 'graduate'
 export interface Profile {
   id: string; user_id: string; target_role: TargetRole | null
@@ -10,6 +11,7 @@ export type ProfileInput = Omit<Profile, 'id' | 'user_id' | 'version' | 'memory_
 
 export type InterviewMode = 'technical' | 'behavioral' | 'pressure'
 export interface SessionConfig {
+  secondary_roles: TargetRole[]
   question_count: number; difficulty: number; max_followups: number
   pressure_level: number; pressure_consent: boolean
 }
@@ -20,11 +22,12 @@ export interface Operation {
   retryable: boolean; result_refs: Record<string, unknown>
 }
 export interface InterviewSession {
+  role_plan: RoleAllocation[]
   id: string; title: string; role: TargetRole | null; mode: InterviewMode | null
   status: 'clarifying' | 'ready' | 'interviewing' | 'paused' | 'evaluating' | 'completed' | 'aborted'
   config: SessionConfig; version: number; is_mock: boolean; created_at: string
   provider: 'mock' | 'deepseek'; model_name: string | null; rubric_version: string | null; prompt_version: string | null
-  current_question: { id: string; ordinal: number; topic: string; content: string; followup_count: number; difficulty: number; hint_used: boolean } | null
+  current_question: { id: string; role: TargetRole; ordinal: number; topic: string; content: string; followup_count: number; difficulty: number; hint_used: boolean } | null
   active_operation_id: string | null; latest_operation: Operation | null; coverage: Coverage
 }
 export interface InterviewMessage {
@@ -33,6 +36,7 @@ export interface InterviewMessage {
 }
 export interface Page<T> { items: T[]; next_cursor: string | null }
 export interface InterviewReport {
+  role_plan?: RoleAllocation[]
   id?: string; session_id?: string; status: string; is_mock: boolean; total_score: number | null
   coverage: Coverage; summary?: string; messages?: InterviewMessage[]; dimension_scores?: Record<string, number | null>
   weights?: Record<string, number>; model_name?: string; rubric_version?: string; prompt_version?: string
@@ -40,6 +44,7 @@ export interface InterviewReport {
 }
 export interface ReviewItem { text: string; question_ids: string[] }
 export interface QuestionEvaluation {
+  role: TargetRole
   id: string; question_id: string; question: string; ordinal: number; topic: string; hint_used: boolean
   question_score: number | null; missing_points: string[]; suggestion: string
   dimensions: Record<string, { score: number | null; reason: string; evidence: { message_id: string; quote: string }[] }>

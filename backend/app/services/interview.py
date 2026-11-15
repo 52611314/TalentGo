@@ -7,6 +7,7 @@ from sqlalchemy import delete, func, select, tuple_
 
 from app.agent.state_machine import ACTIVE, configuration_state, require_action
 from app.core.errors import AppError
+from app.core.roles import role_plan, validate_selection
 from app.models import Evaluation, InterviewSession, Message, Operation, OperationEvent, Profile, Question, Report, SkillRun
 from app.schemas.profile import ProfileRead
 from app.services.idempotency import begin_request, save_receipt
@@ -77,11 +78,13 @@ def session_data(db, session):
     latest = latest_operation(db, session.id)
     question = db.get(Question, session.current_question_id) if session.current_question_id else None
     return {'id': str(session.id), 'title': session.title, 'role': session.role, 'mode': session.mode,
+            'role_plan': role_plan(session.role, session.config),
             'status': session.status, 'config': session.config, 'version': session.version,
             'is_mock': session.provider == 'mock', 'provider': session.provider, 'model_name': session.model_name,
             'rubric_version': session.rubric_version, 'prompt_version': session.prompt_version,
             'created_at': session.created_at.isoformat(), 'source_task_id': str(session.source_task_id) if session.source_task_id else None,
             'current_question': {'id': str(question.id), 'ordinal': question.ordinal, 'topic': question.topic,
+                                 'role': question.rubric_snapshot.get('target_role', session.role),
                                  'content': question.content, 'followup_count': question.followup_count,
                                  'hint_used': question.hint_used, 'difficulty': question.difficulty} if question else None,
             'active_operation_id': str(latest.id) if latest and latest.status in ACTIVE else None,
@@ -146,10 +149,14 @@ def patch_session(db, user_id, session_id, body, key):
         if field != 'expected_version':
             setattr(session, field, body.config.model_dump() if field == 'config' else value)
     session.status = configuration_state(session.role, session.mode)
+    try:
+        validate_selection(session.role, session.config)
+    except ValueError as error:
+        raise AppError(422, 'INVALID_ROLE_SELECTION', str(error)) from None
     if session.source_task_id:
         from app.services.practice import owned_task
         task = owned_task(db, user_id, session.source_task_id)
-        if session.role != task.role or session.mode != task.mode:
+        if session.role != task.role or session.mode != task.mode or session.config.get('secondary_roles'):
             raise AppError(422, 'TASK_CONFIG_MISMATCH', '复练岗位和模式必须与来源一致')
     session.version += 1
     db.flush()
@@ -171,6 +178,10 @@ def submit(db, user_id, session_id, body, key, is_message=False):
     action = body.kind if is_message else body.action
     require_action(session.status, action)
     if action == 'start':
+        try:
+            validate_selection(session.role, session.config)
+        except ValueError as error:
+            raise AppError(422, 'INVALID_ROLE_SELECTION', str(error)) from None
         if session.mode == 'pressure' and not session.config['pressure_consent']:
             raise AppError(409, 'PRESSURE_CONSENT_REQUIRED', '请先确认压力训练强度与退出方式')
         profile = db.scalar(select(Profile).where(Profile.user_id == user_id))
@@ -268,6 +279,7 @@ def report_data(db, user_id, session_id):
         return {'status': 'failed' if latest and latest.status == 'failed' else 'pending', 'is_mock': session.provider == 'mock',
                 'total_score': None, 'coverage': coverage(db, session)}
     return {'id': str(report.id), 'session_id': str(session_id), 'status': report.status, 'is_mock': report.is_mock,
+            'role_plan': role_plan(session.role, session.config),
             'total_score': float(report.total_score) if report.total_score is not None else None,
             'summary': report.summary, 'coverage': report.coverage, 'dimension_scores': report.dimension_scores,
             'weights': report.weights, 'strengths': report.strengths, 'gaps': report.gaps, 'recommendations': report.recommendations,
@@ -280,9 +292,11 @@ def evaluations_for_report(db, session_id):
     from app.agent.orchestrator import evaluation_data
     rows = db.scalars(select(Evaluation).where(Evaluation.session_id == session_id, Evaluation.scope == 'final').order_by(Evaluation.created_at)).all()
     result = []
+    session = db.get(InterviewSession, session_id)
     for row in rows:
         question = db.get(Question, row.question_id)
         result.append({**evaluation_data(row), 'question': question.content, 'ordinal': question.ordinal,
+                       'role': question.rubric_snapshot.get('target_role', session.role),
                        'topic': question.topic, 'hint_used': question.hint_used})
     return result
 

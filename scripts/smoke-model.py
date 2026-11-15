@@ -37,7 +37,7 @@ def main():
             if response.status_code >= 400:
                 raise RuntimeError(f"{response.status_code}: {response.json().get('error', {}).get('code')}")
             return response.json()['data']
-        identity = call('POST', '/identity', {'display_name': 'M3 合成场景验证'}, {'Idempotency-Key': secrets.token_hex(32)})
+        identity = call('POST', '/auth/register', {'username': 'smoke_'+secrets.token_hex(6), 'password': secrets.token_urlsafe(24)})
         auth = {'Authorization': 'Bearer ' + identity['token']}
         def post(path, body):
             return call('POST', path, body, {**auth, 'Idempotency-Key': uuid.uuid4().hex})
@@ -55,7 +55,7 @@ def main():
             sid = None
             started = time.monotonic()
             try:
-                session = post('/sessions', {'title': f'M3 合成验证 · {mode}', 'provider': 'deepseek', 'role': 'frontend', 'mode': mode,
+                session = post('/sessions', {'title': f'合成场景验证 · {mode}', 'provider': 'deepseek', 'role': 'frontend', 'mode': mode,
                     'config': {'question_count': 1, 'max_followups': 0, 'pressure_consent': mode == 'pressure'}})
                 sid = session['id']
                 wait(post(f'/sessions/{sid}/actions', {'action': 'start', 'expected_version': session['version']})['operation_id'])

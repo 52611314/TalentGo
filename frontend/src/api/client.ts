@@ -22,6 +22,7 @@ export async function request<T>(path: string, options: RequestInit = {}, token?
   } catch {
     throw new ApiError(0, 'NETWORK_ERROR', '连接暂不可用，请检查本地服务后重试')
   }
+  if (result.status === 204) return undefined as T
   let body
   try { body = await result.json() }
   catch { throw new ApiError(0, 'INCOMPLETE_RESPONSE', '响应未完整收到，请使用原请求重试确认结果') }

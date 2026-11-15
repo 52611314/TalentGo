@@ -75,6 +75,7 @@ def rebuild_summary(db, session):
         Question.session_id == session.id, Evaluation.scope == 'final').order_by(Question.ordinal)).all()
     # Deterministic summary stores topic coverage and numeric outcomes, never copied memory/assistant prose.
     content = {'completed_topics': [{'ordinal': q.ordinal, 'question_id': str(q.id), 'topic': q.topic,
+        'role': q.rubric_snapshot.get('target_role', session.role),
         'score': float(e.question_score) if e.question_score is not None else None} for q,e in rows]}
     row = db.scalar(select(SessionSummary).where(SessionSummary.session_id == session.id))
     if row is None:

@@ -11,6 +11,8 @@ class User(IdentityMixin, Base):
     __table_args__ = (CheckConstraint("status IN ('active', 'revoked')", name='status'),)
 
     display_name: Mapped[str] = mapped_column(String(60))
+    username: Mapped[str | None] = mapped_column(String(32), unique=True)
+    password_hash: Mapped[str | None] = mapped_column(String(256))
     token_hash: Mapped[str] = mapped_column(String(128), unique=True)
     creation_key_hash: Mapped[str] = mapped_column(String(128), unique=True)
     status: Mapped[str] = mapped_column(String(16), default='active')

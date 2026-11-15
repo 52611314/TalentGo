@@ -6,12 +6,12 @@ from app.api.deps import DB, response
 from app.core.errors import AppError
 
 router = APIRouter(prefix='/health', tags=['health'])
-MIGRATION_HEAD = '0004_m4_memory'
+MIGRATION_HEAD = '0005_accounts_roles'
 
 
 @router.get('/live')
 def live(request: Request):
-    return response(request, {'status': 'ok', 'app': 'TalentGo', 'milestone': 'M5', 'version': '0.5.0'})
+    return response(request, {'status': 'ok', 'app': 'TalentGo', 'milestone': 'M5', 'version': '0.6.0'})
 
 
 @router.get('/ready')

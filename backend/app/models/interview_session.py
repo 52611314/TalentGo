@@ -12,7 +12,6 @@ class InterviewSession(IdentityMixin, Base):
     __tablename__ = 'interview_sessions'
     __table_args__ = (
         CheckConstraint("status IN ('clarifying','ready','interviewing','paused','evaluating','completed','aborted')", name='status'),
-        CheckConstraint("role IS NULL OR role IN ('frontend','backend')", name='role'),
         CheckConstraint("mode IS NULL OR mode IN ('technical','behavioral','pressure')", name='mode'),
         CheckConstraint('version > 0', name='version'),
         ForeignKeyConstraint(['current_question_id', 'id'], ['questions.id', 'questions.session_id'],

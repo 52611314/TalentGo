@@ -1,6 +1,7 @@
 from app.models.idempotency import IdempotencyReceipt
 from app.models.profile import Profile
 from app.models.user import User
+from app.models.auth_session import AuthSession
 from app.models.interview_session import InterviewSession
 from app.models.question import Question
 from app.models.message import Message

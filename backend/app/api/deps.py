@@ -23,10 +23,10 @@ DB = Annotated[Session, Depends(get_db)]
 
 def current_user(db: DB, credential: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)]) -> User:
     if credential is None or len(credential.credentials) > 128:
-        raise AppError(401, 'INVALID_IDENTITY', '请先创建或切换训练身份')
+        raise AppError(401, 'INVALID_IDENTITY', '请先登录账号')
     user = find_active_user(db, hash_secret(credential.credentials))
     if user is None:
-        raise AppError(401, 'INVALID_IDENTITY', '训练身份无效，请检查本机保存的身份')
+        raise AppError(401, 'INVALID_IDENTITY', '登录已失效，请重新登录')
     return user
 
 

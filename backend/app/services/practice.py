@@ -28,7 +28,7 @@ def tasks(db, user_id, limit=20, offset=0, status=None):
 
 def validate_source(db, user_id, body):
     task = owned_task(db, user_id, body.source_task_id)
-    if body.provider != 'deepseek' or body.role != task.role or body.mode != task.mode:
+    if body.provider != 'deepseek' or body.role != task.role or body.mode != task.mode or body.config.secondary_roles:
         raise AppError(422, 'TASK_CONFIG_MISMATCH', '复练须使用真实模型和来源任务相同的岗位/模式')
     from app.services.scoring import RUBRIC_VERSION
     if task.rubric_version != RUBRIC_VERSION or not task.seed:
@@ -59,16 +59,17 @@ def derive(db, session):
     wrote_memory = False
     for row in rows:
         question = db.get(Question, row.question_id)
+        target_role = question.rubric_snapshot.get('target_role', session.role)
         weak = bool(row.missing_points) or any(d['score'] is not None and float(d['score']) < 3 for d in row.dimensions.values())
         if not weak: continue
         if not db.scalar(select(PracticeTask.id).where(PracticeTask.source_evaluation_id == row.id)):
             db.add(PracticeTask(user_id=session.user_id, source_session_id=session.id, source_evaluation_id=row.id,
-                role=session.role, mode=session.mode, topic=question.topic, seed=question.rubric_snapshot,
+                role=target_role, mode=session.mode, topic=question.topic, seed=question.rubric_snapshot,
                 rubric_version=session.rubric_version, instruction=row.suggestion))
         existing = db.scalar(select(Memory.id).where(Memory.user_id == session.user_id, Memory.kind == 'weakness',
-            Memory.topic == question.topic, Memory.role == session.role, Memory.mode == session.mode))
+            Memory.topic == question.topic, Memory.role == target_role, Memory.mode == session.mode))
         if profile.allow_inferred_memory and not existing:
-            db.add(Memory(user_id=session.user_id, kind='weakness', topic=question.topic, role=session.role, mode=session.mode,
+            db.add(Memory(user_id=session.user_id, kind='weakness', topic=question.topic, role=target_role, mode=session.mode,
                 content=('待复查：' + '；'.join(row.missing_points or [row.suggestion]))[:1200],
                 source_type='system_inferred', source_session_id=session.id, source_evaluation_id=row.id, confirmed=False))
             wrote_memory = True
@@ -84,10 +85,10 @@ def trends(db, user_id, limit=100, offset=0):
         .order_by(Report.created_at, Report.id).offset(offset).limit(limit+1)).all()
     groups = {}
     for report, session in rows[:limit]:
-        key = (session.role, session.mode, report.rubric_version)
+        key = (session.role, session.mode, report.rubric_version, tuple(session.config.get('secondary_roles', [])))
         groups.setdefault(key, []).append({'session_id': str(session.id), 'score': float(report.total_score),
             'created_at': report.created_at.isoformat(), 'coverage': report.coverage, 'model_name': report.model_name,
             'prompt_version': report.prompt_version})
-    return {'groups': [{'role': k[0], 'mode': k[1], 'rubric_version': k[2], 'points': v} for k,v in groups.items()],
+    return {'groups': [{'role': k[0], 'mode': k[1], 'rubric_version': k[2], 'secondary_roles': list(k[3]), 'points': v} for k,v in groups.items()],
         'next_offset': offset+limit if len(rows)>limit else None,
-        'notice': '按岗位/模式/评分版本分组；题目、模型和提示使用可能不同，分数变化不等于能力提升。'}
+        'notice': '按主次岗位组合/模式/评分版本分组；题目、模型和提示使用可能不同，分数变化不等于能力提升。'}
