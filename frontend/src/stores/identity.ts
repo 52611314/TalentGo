@@ -14,9 +14,14 @@ export const useIdentityStore = defineStore('identity', () => {
   const profile = ref<Profile | null>(null)
   const loading = ref(false)
   const error = ref('')
+  const initialized = ref(false)
+  let initialization: Promise<void> | null = null
   let generation = 0
   let pending: { signature: string; key: string } | null = null
-  const persist = () => identity.value ? localStorage.setItem(STORAGE, JSON.stringify(identity.value)) : localStorage.removeItem(STORAGE)
+  const persist = () => {
+    try { identity.value ? localStorage.setItem(STORAGE, JSON.stringify(identity.value)) : localStorage.removeItem(STORAGE) }
+    catch { /* A blocked browser store must not turn a successful server login into a failure. */ }
+  }
 
   function clear() {
     ++generation
@@ -43,9 +48,16 @@ export const useIdentityStore = defineStore('identity', () => {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE) || 'null')
       if (saved && typeof saved.user_id === 'string' && typeof saved.username === 'string' && typeof saved.token === 'string' && typeof saved.display_name === 'string' && Date.parse(saved.expires_at) > Date.now()) identity.value = saved
-      else localStorage.removeItem(STORAGE)
-    } catch { localStorage.removeItem(STORAGE) }
+      else { identity.value = null; persist() }
+    } catch { identity.value = null; persist() }
     await refresh()
+  }
+  function initialize() {
+    if (!initialization) initialization = restore().finally(() => { initialized.value = true })
+    return initialization
+  }
+  function expireIfNeeded() {
+    if (identity.value && !(Date.parse(identity.value.expires_at) > Date.now())) clear()
   }
   async function signIn(mode: 'login' | 'register', username: string, password: string) {
     const result = await authenticate(mode, username, password)
@@ -70,5 +82,5 @@ export const useIdentityStore = defineStore('identity', () => {
     const result = await saveProfile(current.token, fields, snapshot.version, pending!.key)
     if (ticket === generation) { profile.value = result; pending = null }
   }
-  return { activeId, identity, profile, loading, error, restore, refresh, signIn, logout, save }
+  return { activeId, identity, profile, loading, error, initialized, initialize, expireIfNeeded, restore, refresh, signIn, logout, save }
 })

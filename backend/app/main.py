@@ -83,7 +83,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(router)
     app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins,
                        allow_methods=['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-                       allow_headers=['Authorization', 'Content-Type', 'Idempotency-Key', 'Last-Event-ID'],
+                       allow_headers=['Authorization', 'Content-Type', 'Idempotency-Key', 'Last-Event-ID', 'DNT'],
                        expose_headers=['X-Request-ID'])
     return app
 

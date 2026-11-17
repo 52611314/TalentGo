@@ -37,7 +37,8 @@ def snapshot_for_model(db, session, operation):
     thread = [serialize(m) for m in all_messages if question and m.question_id == question.id]
     history = [serialize(m) for m in all_messages if (not question or m.question_id != question.id)
                and m.speaker == 'user' and m.created_at >= profile.updated_at][-4:]
-    evaluations = db.scalars(select(Evaluation).where(Evaluation.session_id == session.id, Evaluation.scope == 'final')).all()
+    evaluations = db.scalars(select(Evaluation).join(Question, Evaluation.question_id == Question.id)
+        .where(Evaluation.session_id == session.id, Evaluation.scope == 'final').order_by(Question.ordinal)).all()
     latest = db.scalar(select(Evaluation).where(Evaluation.question_id == question.id).order_by(Evaluation.revision.desc()).limit(1)) if question else None
     return {'id': str(session.id), 'operation_id': str(operation.id), 'attempt_no': operation.attempt_no,
         'kind': operation.kind, 'user_id': str(session.user_id), 'memory_revision': profile.memory_revision,

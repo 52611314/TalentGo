@@ -2,7 +2,7 @@
 from datetime import datetime, timedelta, timezone
 import uuid
 import pytest
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from app.core.roles import ROLES, role_plan
 from app.core.security import hash_secret, verify_password
 from app.models import AuthSession, User, Question, PracticeTask
@@ -69,6 +69,55 @@ def test_logout_revokes_only_current_login_and_expiry_is_enforced(client):
         row.expires_at = datetime.now(timezone.utc) - timedelta(seconds=1)
         db.commit()
     assert client.get('/api/v1/profile', headers=headers(another)).status_code == 401
+
+
+@pytest.mark.parametrize('origin', ['http://127.0.0.1:5173', 'http://localhost:5173'])
+def test_edge_dnt_preflight_allows_login_and_protected_mutations(client, origin):
+    for path, method, requested in [
+        ('/auth/login', 'POST', 'content-type,dnt'),
+        ('/auth/register', 'POST', 'content-type,dnt'),
+        ('/profile', 'PATCH', 'authorization,content-type,dnt,idempotency-key'),
+        ('/operations/example/events', 'GET', 'authorization,dnt,last-event-id'),
+    ]:
+        response = client.options('/api/v1' + path, headers={
+            'Origin': origin, 'Access-Control-Request-Method': method,
+            'Access-Control-Request-Headers': requested,
+        })
+        assert response.status_code == 200
+        assert response.headers['access-control-allow-origin'] == origin
+    rejected = client.options('/api/v1/auth/login', headers={
+        'Origin': 'https://untrusted.example', 'Access-Control-Request-Method': 'POST',
+        'Access-Control-Request-Headers': 'content-type,dnt',
+    })
+    assert rejected.status_code == 400
+    assert 'access-control-allow-origin' not in rejected.headers
+
+
+def test_account_and_profile_survive_expired_session_cleanup(client):
+    account = register(client, 'persistent_student')
+    saved = client.patch('/api/v1/profile', headers=mutation(headers(account)), json={
+        'expected_version': account['profile']['version'], 'goals': '持续保存的训练目标',
+    })
+    assert saved.status_code == 200
+    old_created = datetime.now(timezone.utc) - timedelta(days=30)
+    with client.app.state.session_factory() as db:
+        user = db.get(User, uuid.UUID(account['user_id']))
+        user.created_at = old_created
+        session = db.scalar(select(AuthSession).where(AuthSession.user_id == user.id))
+        session.expires_at = datetime.now(timezone.utc) - timedelta(days=1)
+        db.commit()
+    assert client.get('/api/v1/profile', headers=headers(account)).status_code == 401
+    with client.app.state.session_factory() as db:
+        db.execute(delete(AuthSession).where(AuthSession.user_id == uuid.UUID(account['user_id'])))
+        db.commit()
+    # A new database transaction and login recover the same durable user, not a replacement account.
+    logged = client.post('/api/v1/auth/login', json={'username':'persistent_student', 'password':'test-pass-123'})
+    assert logged.status_code == 200
+    data = logged.json()['data']
+    assert data['user_id'] == account['user_id']
+    assert data['profile']['goals'] == '持续保存的训练目标'
+    with client.app.state.session_factory() as db:
+        assert db.get(User, uuid.UUID(data['user_id'])).created_at == old_created
 
 
 def test_local_admin_seed_is_idempotent_and_never_resets_password(client):

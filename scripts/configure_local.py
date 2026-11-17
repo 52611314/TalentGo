@@ -32,7 +32,7 @@ def main():
                                'LLM_PROVIDER=mock\n', encoding='utf-8')
     frontend_env = ROOT / 'frontend/.env'
     if not frontend_env.exists():
-        frontend_env.write_text('VITE_API_BASE_URL=http://127.0.0.1:8000/api/v1\n', encoding='utf-8')
+        frontend_env.write_text('VITE_API_BASE_URL=/api/v1\n', encoding='utf-8')
     print('Local environment files ready. Existing files preserved; no credentials displayed.')
 
 
