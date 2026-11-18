@@ -6,7 +6,7 @@ from app.api.deps import DB, response
 from app.core.errors import AppError
 
 router = APIRouter(prefix='/health', tags=['health'])
-MIGRATION_HEAD = '0005_accounts_roles'
+MIGRATION_HEAD = '0006_profile_secondary_roles'
 
 
 @router.get('/live')

@@ -35,6 +35,11 @@
 
 html { scrollbar-gutter: stable; }
 .home-grid .practice-section { grid-column: 1 / -1; }
+.setup-layout.streamlined-layout, .profile-layout.streamlined-layout { grid-template-columns: minmax(0, 1fr); }
+.setup-actions { justify-content: flex-end; }
+.memory-item-actions { gap: 14px; }
+.memory-edit-actions { display: flex; align-items: center; gap: 20px; }
+.button.compact { min-height: 34px; padding: 7px 13px; font-size: 12px; gap: 6px; }
 body { background: var(--surface-mist); }
 ::selection { color: var(--ink); background: var(--tone-lavender); }
 button, a, summary {

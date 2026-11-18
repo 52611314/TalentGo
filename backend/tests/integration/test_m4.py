@@ -1,5 +1,6 @@
 import threading
 import uuid
+from datetime import datetime, timedelta, timezone
 import pytest
 from sqlalchemy import select
 from app.agent.orchestrator import snapshot_for_model
@@ -100,6 +101,11 @@ def test_memory_change_cancels_stale_generation_before_commit(client,provider):
     provider.block=False
     r=client.post(f'/api/v1/operations/{op}/retry',headers=mutation(h),json={});assert r.status_code==202
     wait(client,h,op)
+    # Retry order follows attempts even when the database clock moves backwards.
+    with client.app.state.session_factory() as db:
+        for row in db.scalars(select(MemoryUsage).where(MemoryUsage.operation_id == uuid.UUID(op))):
+            row.created_at = datetime.now(timezone.utc) + timedelta(days=1 if row.attempt_no == 1 else -1)
+        db.commit()
     usage=client.get(f'/api/v1/sessions/{sid}/memory-usages',headers=h).json()['data']['items']
     assert usage[-1]['memory_version']==2 and usage[-1]['attempt_no']==2
 

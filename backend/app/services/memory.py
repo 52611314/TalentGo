@@ -1,7 +1,7 @@
 import uuid
 from sqlalchemy import delete, func, or_, select
 from app.core.errors import AppError
-from app.models import Memory, MemoryUsage, Profile, SessionSummary
+from app.models import Memory, MemoryUsage, Operation, Profile, SessionSummary
 from app.services.idempotency import begin_request, save_receipt
 
 
@@ -107,7 +107,10 @@ def retrieve(db, session, topic):
 def usage_data(db, user_id, session_id):
     from app.services.interview import owned_session
     owned_session(db, user_id, session_id)
-    rows = db.scalars(select(MemoryUsage).where(MemoryUsage.session_id == session_id).order_by(MemoryUsage.created_at)).all()
+    rows = db.scalars(select(MemoryUsage).join(Operation, MemoryUsage.operation_id == Operation.id)
+        .where(MemoryUsage.session_id == session_id)
+        .order_by(Operation.expected_session_version, Operation.created_at, Operation.id,
+                  MemoryUsage.attempt_no, MemoryUsage.created_at, MemoryUsage.id)).all()
     return {'items': [{'id': str(r.id), 'operation_id': str(r.operation_id), 'attempt_no': r.attempt_no,
         'memory_id': str(r.memory_id), 'memory_version': r.memory_version, 'memory_revision': r.memory_revision,
         'phase': r.phase, 'reason': r.reason,

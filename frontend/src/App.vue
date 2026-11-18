@@ -60,7 +60,7 @@ onMounted(() => { void loadRoles().catch(() => {}) })
     <div class="main-shell">
       <header class="topbar"><div class="topbar-leading"><button class="sidebar-toggle" type="button" :aria-label="sidebarCollapsed ? '展开侧边栏' : '折叠侧边栏'" :title="sidebarCollapsed ? '展开侧边栏' : '折叠侧边栏'" :aria-expanded="!sidebarCollapsed" aria-controls="workspace-sidebar" @click="sidebarCollapsed = !sidebarCollapsed"><component :is="sidebarCollapsed ? PanelLeftOpen : PanelLeftClose" :size="19" /></button><div class="breadcrumb">我的空间 <span>/</span> <strong>{{ route.meta.title }}</strong></div></div><div class="topbar-actions"><button class="account" @click="dialog = true"><span class="avatar">{{ initial }}</span><span>{{ store.identity?.display_name || '登录 / 注册' }}</span><ChevronDown :size="14" /></button></div></header>
       <main id="main-content"><RouterView v-slot="{ Component, route: viewRoute }"><Transition name="page" mode="out-in" appear><div :key="viewRoute.path" class="page-view"><component :is="Component" @create-identity="openLogin" /></div></Transition></RouterView></main>
-      <footer class="page-footer"><span>TalentGo · 为下一次机会，做好准备</span><span>模型反馈仅供练习参考</span></footer>
+      <footer class="page-footer"><span>TalentGo · 为下一次机会，做好准备</span></footer>
     </div>
   </div>
   <ElDialog v-if="!route.meta.authPage" v-model="dialog" title="我的账号" width="460px" align-center :close-on-click-modal="false" :close-on-press-escape="!creating" :show-close="!creating">

@@ -16,6 +16,7 @@ class ProfileRead(StrictModel):
     id: uuid.UUID
     user_id: uuid.UUID
     target_role: Role | None
+    secondary_roles: list[Role] = Field(default_factory=list, max_length=2)
     experience_level: Level | None
     tech_stack: list[str]
     background: str
@@ -30,6 +31,7 @@ class ProfileRead(StrictModel):
 class ProfilePatch(StrictModel):
     expected_version: int = Field(ge=1, strict=True)
     target_role: Role | None = None
+    secondary_roles: list[Role] | None = Field(default=None, max_length=2)
     experience_level: Level | None = None
     tech_stack: list[TechItem] | None = Field(default=None, max_length=20)
     background: str | None = Field(default=None, max_length=4000)

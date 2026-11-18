@@ -147,6 +147,74 @@ def test_account_resources_are_isolated_and_survive_relogin(client):
     assert get(client, headers(relogged), session['id'])['role'] == 'ux'
 
 
+def test_profile_secondary_roles_persist_and_can_configure_an_interview(client):
+    account = register(client)
+    h = headers(account)
+    assert account['profile']['secondary_roles'] == []
+    result = client.patch('/api/v1/profile', headers=mutation(h), json={
+        'expected_version': 1, 'target_role': 'backend', 'secondary_roles': ['ux', 'hardware'],
+    })
+    assert result.status_code == 200
+    saved = result.json()['data']
+    # Unrelated partial updates preserve the ordered secondary choices.
+    result = client.patch('/api/v1/profile', headers=mutation(h), json={
+        'expected_version': saved['version'], 'goals': '面向三个方向练习',
+    })
+    assert result.status_code == 200
+    assert result.json()['data']['secondary_roles'] == ['ux', 'hardware']
+    client.post('/api/v1/auth/logout', headers=h)
+    logged = client.post('/api/v1/auth/login', json={'username': 'student_one', 'password': 'test-pass-123'}).json()['data']
+    profile = logged['profile']
+    assert profile['target_role'] == 'backend' and profile['secondary_roles'] == ['ux', 'hardware']
+    session = create(client, headers(logged), role=profile['target_role'], config={
+        'question_count': 5, 'secondary_roles': profile['secondary_roles'],
+    })
+    assert [p['role'] for p in session['role_plan']] == ['backend', 'ux', 'hardware']
+    assert [p['question_count'] for p in session['role_plan']] == [3, 1, 1]
+    swapped = client.patch('/api/v1/profile', headers=mutation(headers(logged)), json={
+        'expected_version': profile['version'], 'target_role': 'ux', 'secondary_roles': ['backend', 'hardware'],
+    })
+    assert swapped.status_code == 200
+    # Saved preferences never rewrite an already created session.
+    assert get(client, headers(logged), session['id'])['role'] == 'backend'
+    b = register(client, 'another_student')
+    assert b['profile']['secondary_roles'] == []
+
+
+@pytest.mark.parametrize('patch', [
+    {'secondary_roles': ['ux', 'ux']}, {'secondary_roles': ['backend']},
+    {'secondary_roles': ['ux', 'hardware', 'llm_app']}, {'secondary_roles': ['unknown']},
+    {'secondary_roles': None}, {'target_role': None}, {'target_role': 'ux'},
+])
+def test_profile_patch_validates_combined_primary_and_secondary_choices(client, patch):
+    account = register(client)
+    h = headers(account)
+    first = client.patch('/api/v1/profile', headers=mutation(h), json={
+        'expected_version': 1, 'target_role': 'backend', 'secondary_roles': ['ux'],
+    }).json()['data']
+    response = client.patch('/api/v1/profile', headers=mutation(h), json={'expected_version': first['version'], **patch})
+    assert response.status_code == 422
+    after = client.get('/api/v1/profile', headers=h).json()['data']
+    assert after['version'] == first['version'] and after['secondary_roles'] == ['ux']
+
+
+def test_profile_requires_primary_and_can_clear_all_roles_together(client):
+    account = register(client)
+    h = headers(account)
+    assert client.patch('/api/v1/profile', headers=mutation(h), json={
+        'expected_version': 1, 'secondary_roles': ['ux'],
+    }).status_code == 422
+    saved = client.patch('/api/v1/profile', headers=mutation(h), json={
+        'expected_version': 1, 'target_role': 'backend', 'secondary_roles': ['ux'],
+    }).json()['data']
+    cleared = client.patch('/api/v1/profile', headers=mutation(h), json={
+        'expected_version': saved['version'], 'target_role': None, 'secondary_roles': [],
+    })
+    assert cleared.status_code == 200
+    assert cleared.json()['data']['target_role'] is None
+    assert cleared.json()['data']['secondary_roles'] == []
+
+
 def test_anonymous_creation_is_disabled_outside_test_environment(client, monkeypatch):
     monkeypatch.setattr(client.app.state.settings, 'app_env', 'development')
     response = client.post('/api/v1/identity', json={'display_name':'old'}, headers={'Idempotency-Key':'a'*64})

@@ -4,6 +4,7 @@ from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.core.errors import AppError
+from app.core.roles import validate_role_choices
 from app.core.security import hash_secret
 from app.models import IdempotencyReceipt, Profile, User
 from app.repositories.users import find_profile
@@ -30,6 +31,14 @@ def update_profile(db: Session, user: User, patch: ProfilePatch, key: str) -> di
             raise AppError(409, 'IDEMPOTENCY_CONFLICT', '该请求键已用于不同内容')
         return receipt.response_data
     values = {k: v for k, v in payload.items() if k != 'expected_version'}
+    current = db.scalar(select(Profile).where(Profile.user_id == user.id).with_for_update())
+    if current is None or current.version != patch.expected_version:
+        raise AppError(409, 'VERSION_CONFLICT', '资料已变更，请刷新后再保存',
+                       {'current_version': current.version if current else None})
+    try:
+        validate_role_choices(values.get('target_role', current.target_role), values.get('secondary_roles', current.secondary_roles))
+    except ValueError as error:
+        raise AppError(422, 'INVALID_ROLE_SELECTION', str(error)) from None
     changed = db.execute(update(Profile).where(Profile.user_id == user.id, Profile.version == patch.expected_version)
         .values(**values, version=Profile.version + 1).returning(Profile.id)).scalar_one_or_none()
     if changed is None:

@@ -3,7 +3,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import RolePicker from '../components/RolePicker.vue'
 import { roleLabel, rolePlan } from '../data/roles'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowRight, Braces, FlaskConical, ShieldCheck } from '@lucide/vue'
+import { ArrowRight, Braces } from '@lucide/vue'
 import { ApiError, randomKey, request } from '../api/client'
 import { useIdentityStore } from '../stores/identity'
 import type { InterviewMode, InterviewSession, ModelStatus, TargetRole } from '../types/session'
@@ -29,7 +29,7 @@ watch([() => identity.activeId, () => route.query.mode, () => route.query.task],
   Object.assign(form,{title:'我的模拟面试',source_task_id:undefined,
     provider:models.value?.default_provider||'mock',role:identity.profile?.target_role||null,
     mode:['technical','behavioral','pressure'].includes(String(selectedMode))?selectedMode:null,
-    config:{secondary_roles:[],question_count:5,difficulty:1,max_followups:1,pressure_level:1,pressure_consent:false}})
+    config:{secondary_roles:[...(identity.profile?.secondary_roles || [])],question_count:5,difficulty:1,max_followups:1,pressure_level:1,pressure_consent:false}})
   const token=identity.identity?.token
   if(!token)return
   try {
@@ -50,7 +50,10 @@ watch([() => identity.activeId, () => route.query.mode, () => route.query.task],
   }catch(e){if(ticket===scope)error.value=e instanceof Error?e.message:'读取来源任务失败'}
 },{immediate:true})
 watch(() => identity.profile, profile => {
-  if(!form.role && !pending && !uncertain.value && !route.query.task)form.role=profile?.target_role||null
+  if(!form.role && !pending && !uncertain.value && !route.query.task) {
+    form.role=profile?.target_role||null
+    form.config.secondary_roles=[...(profile?.secondary_roles || [])]
+  }
 })
 watch(() => identity.identity?.token, async token => {
   models.value=null;modelError.value=''
@@ -64,7 +67,6 @@ watch(() => identity.identity?.token, async token => {
 },{immediate:true})
 watch(() => form.config.secondary_roles?.length || 0, count => { if (count && form.config.question_count < count + 2 && !uncertain.value && !pending) form.config.question_count = count + 2 })
 const allocation = computed(() => rolePlan(form.role, form.config.secondary_roles || [], form.config.question_count))
-const needsClarification = computed(() => !form.role || !form.mode)
 async function create() {
   if (!identity.identity || busy.value) return
   if (!pending && route.query.task && !form.source_task_id) { error.value = '来源任务尚未读取成功，请刷新后再创建复练'; return }
@@ -97,9 +99,9 @@ async function create() {
 </script>
 
 <template>
-  <section class="page-heading"><div><div class="eyebrow"><span></span> MAKE ROOM FOR PRACTICE</div><h1>一次练习，从一个小目标开始。</h1><p>选好方向，也可以先留下不确定的地方，让我们一起确认。</p></div><span class="mock-badge"><FlaskConical :size="14" /> 按岗位定制</span></section>
+  <section class="page-heading"><div><div class="eyebrow"><span></span> MAKE ROOM FOR PRACTICE</div><h1>一次练习，从一个小目标开始。</h1><p>选好方向，也可以先留下不确定的地方，让我们一起确认。</p></div></section>
   <section v-if="!identity.identity" class="card empty-profile"><Braces :size="32" /><h2>登录账号，开始你的练习</h2><p>面试记录只对所属账号开放，刷新后也可以继续。</p><button class="button primary" @click="$emit('create-identity')">登录 / 注册 <ArrowRight :size="16" /></button></section>
-  <div v-else class="setup-layout">
+  <div v-else class="setup-layout streamlined-layout">
     <form class="card profile-form" @submit.prevent="create">
       <div class="form-card-title"><span class="icon-box"><Braces :size="20" /></span><div><h2>配置这次练习</h2><p>选择岗位与面试类型，也可以保留不确定项，在开始前确认。</p></div></div>
       <p v-if="form.source_task_id" class="mock-notice">本次来源于已有复练任务：首题针对来源主题，实际完成有效评价后更新任务。</p>
@@ -112,10 +114,8 @@ async function create() {
         <div class="form-section"><div class="form-section-label"><span>02</span><h3>控制你的练习节奏</h3></div><div class="two-fields"><div><label for="question-count">总问题数量（1—10）</label><input id="question-count" type="number" v-model.number="form.config.question_count" :min="form.config.secondary_roles?.length ? form.config.secondary_roles.length + 2 : 1" max="10" required /></div><div><label for="followups">每题追问上限</label><select id="followups" v-model.number="form.config.max_followups"><option :value="0">不追问</option><option :value="1">最多 1 次</option><option :value="2">最多 2 次</option></select></div><div><label for="difficulty">起始难度</label><select id="difficulty" v-model.number="form.config.difficulty"><option :value="1">基础</option><option :value="2">进阶</option><option :value="3">深入</option></select></div></div></div>
         <div v-if="form.mode === 'pressure'" class="form-section"><label for="pressure-level">压力强度</label><select id="pressure-level" v-model.number="form.config.pressure_level"><option :value="1">温和</option><option :value="2">适中</option><option :value="3">较强</option></select><label class="memory-toggle"><input type="checkbox" v-model="form.config.pressure_consent" /><span><strong>我已了解并同意当前强度</strong><small>可以随时降低强度、暂停或结束。训练不作心理评价。</small></span></label></div>
       </fieldset>
-      <p class="mock-notice"><FlaskConical :size="16" />{{ form.provider === 'mock' ? '固定题目与演示规则，不评估能力分数。' : '真实模型将处理本场画像与答案。评分引用你的原文，仅供练习参考；服务失败时不会静默切换为 Mock。' }}</p>
       <p v-if="error || uncertain" class="error-banner" role="alert">{{ error || '上次创建结果未确认，请用原请求确认，避免重复建立练习。' }}</p>
-      <div class="form-actions"><span class="save-state">{{ needsClarification ? '将先确认缺少的目标' : '创建后可确认并开始练习' }}</span><button class="button primary" :disabled="busy || (form.mode === 'pressure' && !form.config.pressure_consent)">{{ busy ? '创建中…' : uncertain ? '确认上次创建' : '创建练习' }}<ArrowRight :size="16" /></button></div>
+      <div class="form-actions setup-actions"><button class="button primary" :disabled="busy || (form.mode === 'pressure' && !form.config.pressure_consent)">{{ busy ? '创建中…' : uncertain ? '确认上次创建' : '创建练习' }}<ArrowRight :size="16" /></button></div>
     </form>
-    <aside class="card setup-note"><ShieldCheck :size="24" /><h3>按你的节奏来。</h3><p>回答会先保存，再生成下一条消息。刷新不会自动重发答案。</p><p>{{ form.provider === 'mock' ? '短于 50 字时可能触发固定追问，只用于演示。' : '技术、STAR 行为、建设性压力训练各有独立规则；缺项或关键错误可触发预算内追问，最终按主问题计分。' }}</p><p>开始后冻结本次配置、画像与规则版本。压力训练可随时降低强度、暂停或结束。</p></aside>
   </div>
 </template>

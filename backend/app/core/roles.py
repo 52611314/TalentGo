@@ -39,9 +39,17 @@ def role_for_question(primary, config, ordinal):
     raise ValueError('Question ordinal outside the role plan')
 
 
-def validate_selection(primary, config):
-    secondary = config.get('secondary_roles', [])
+def validate_role_choices(primary, secondary):
+    if len(secondary) > 2:
+        raise ValueError('最多选择两个次选岗位')
     if len(set(secondary)) != len(secondary) or primary in secondary:
         raise ValueError('岗位不能重复')
+    if secondary and not primary:
+        raise ValueError('选择次选岗位时须明确主岗位')
+
+
+def validate_selection(primary, config):
+    secondary = config.get('secondary_roles', [])
+    validate_role_choices(primary, secondary)
     if secondary and (not primary or config['question_count'] < len(secondary) + 2):
         raise ValueError('选择次选岗位时须明确主岗位，且题数至少为岗位数加一')

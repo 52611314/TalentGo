@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Integer, String, Text, func, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -18,6 +18,7 @@ class Profile(IdentityMixin, Base):
 
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey('users.id', ondelete='CASCADE'), unique=True)
     target_role: Mapped[str | None] = mapped_column(String(32))
+    secondary_roles: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default=text("'[]'::jsonb"))
     experience_level: Mapped[str | None] = mapped_column(String(24))
     tech_stack: Mapped[list[str]] = mapped_column(JSONB, default=list)
     background: Mapped[str] = mapped_column(Text, default='')
