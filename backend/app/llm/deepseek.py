@@ -8,6 +8,11 @@ from pydantic import ValidationError
 from app.core.errors import AppError
 from app.llm.base import ModelResult
 
+OUTPUT_BUDGETS = {
+    'GeneratedQuestion': 520, 'AnswerEvaluation': 1150, 'InterviewReview': 950,
+    'GeneratedHint': 340, 'ClarifiedGoal': 340,
+}
+
 
 class DeepSeekProvider:
     """Bounded Chat Completions JSON adapter; reasoning content is never stored."""
@@ -36,7 +41,8 @@ class DeepSeekProvider:
             if sum(len(m['content']) for m in messages) > self.settings.context_max_characters:
                 raise AppError(422, 'CONTEXT_TOO_LONG', '上下文过长，请缩短输入或新建练习；当前答案未截断评分')
             payload = {'model': self.model, 'messages': messages, 'response_format': {'type': 'json_object'},
-                       'stream': True, 'max_tokens': self.settings.llm_max_tokens, 'temperature': 0.2,
+                       'stream': True, 'max_tokens': min(self.settings.llm_max_tokens, OUTPUT_BUDGETS.get(schema.__name__, self.settings.llm_max_tokens)),
+                       'temperature': 0.2,
                        'stream_options': {'include_usage': True}}
             if urlsplit(self.base_url).hostname in {'api.deepseek.com'}:
                 payload['thinking'] = {'type': 'disabled'}
@@ -112,7 +118,7 @@ class DeepSeekProvider:
                 messages += [{'role': 'assistant', 'content': content[:16000]},
                              {'role': 'user', 'content': f'上次 {schema.__name__} 结果未通过校验：{reason}。'
                               '请更简洁地重新输出满足同一 schema 的完整 JSON，避免截断。不增加字段、总分或不存在的来源。'
-                              '若当前任务是出题，topic 必须完全等于 seed.topic，anchors 至少两条本题要点；'
-                              '若是评价，非空分数必须引用允许的用户答案 ID 与逐字原文；'
+                              '若当前任务是出题，topic 必须完全等于 seed.topic，问题单行且不超过110字符，anchors 提供两条简短本题要点；'
+                              '若是评价，非空分数必须引用允许的用户答案 ID 与逐字原文；追问最多80字符，仅问一点；'
                               '若是复盘，每条 question_ids 只能使用 evaluations 中的完整 question_id，text 简短，少写条目。'}]
         raise AppError(503, 'MODEL_OUTPUT_INVALID', '模型结果不可用')

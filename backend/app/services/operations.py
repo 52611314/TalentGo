@@ -14,6 +14,7 @@ from app.core.errors import AppError
 from app.llm.mock import MockProvider
 from app.models import Evaluation, InterviewSession, Message, Operation, OperationEvent, Question, Report, User
 from app.services.idempotency import begin_request, save_receipt
+from app.services.answer_clock import start_turn
 from app.services.interview import (
     append_message, coverage, ensure_idle, now, operation_data, owned_operation, owned_session,
 )
@@ -44,7 +45,7 @@ def control_operation(db, user_id, operation_id, key, retry=False):
         else:
             require_action(session.status, operation.kind)
         question_id = operation.request_payload.get('question_id')
-        if operation.kind in {'answer', 'hint', 'skip'} and question_id != str(session.current_question_id):
+        if operation.kind in {'answer', 'hint', 'skip', 'time_expired'} and question_id != str(session.current_question_id):
             raise AppError(409, 'QUESTION_MISMATCH', '该操作已不对应当前问题')
         session.version += 1
         operation.expected_session_version = session.version
@@ -95,7 +96,7 @@ class OperationRunner:
             for operation in rows:
                 operation.status = 'failed'
                 operation.error_code = 'PROCESS_INTERRUPTED'
-                operation.finished_at = now()
+                operation.finished_at = db.scalar(select(func.clock_timestamp()))
                 add_event(db, operation, 'operation.failed', {'error_code': operation.error_code, 'retryable': True})
             db.commit()
 
@@ -122,7 +123,7 @@ class OperationRunner:
     def _cancelled(self, db, session, operation):
         if operation.cancel_requested:
             operation.status = 'cancelled'
-            operation.finished_at = now()
+            operation.finished_at = db.scalar(select(func.clock_timestamp()))
             add_event(db, operation, 'operation.cancelled', {'session_id': str(session.id)})
             return True
         return False
@@ -185,6 +186,7 @@ class OperationRunner:
         elif kind in {'hint', 'followup'}:
             if kind == 'followup':
                 question.followup_count += 1
+                start_turn(question, session.config, now())
             if kind == 'hint' or plan.get('uses_hint'):
                 question.hint_used = True
             append_message(db, session.id, 'assistant', kind, plan['text'], question.id, operation.id)
@@ -195,10 +197,13 @@ class OperationRunner:
             elif question:
                 has_answer = db.scalar(select(Message.id).where(Message.question_id == question.id, Message.kind == 'answer').limit(1))
                 question.status = 'answered' if has_answer else 'unscored'
+                if operation.kind == 'time_expired':
+                    append_message(db, session.id, 'system', 'notice', '本轮答题时间到，本题已结束。', question.id, operation.id)
             if kind == 'question':
                 next_question = Question(session_id=session.id, ordinal=plan['ordinal'], topic=plan['topic'], content=plan['text'],
                                          difficulty=plan.get('difficulty', session.config['difficulty']),
                                          source_key=plan.get('source_key'), rubric_snapshot=plan.get('rubric_snapshot', {}))
+                start_turn(next_question, session.config, now())
                 db.add(next_question)
                 db.flush()
                 session.current_question_id = next_question.id
@@ -233,7 +238,7 @@ class OperationRunner:
             rebuild_summary(db, session)
         session.version += 1
         operation.status = 'succeeded'
-        operation.finished_at = now()
+        operation.finished_at = db.scalar(select(func.clock_timestamp()))
         operation.result_refs = {'session_id': str(session.id), 'session_version': session.version,
                                  'report_ready': session.status == 'completed'}
         add_event(db, operation, 'state.changed', {'status': session.status, 'session_version': session.version})
@@ -262,7 +267,7 @@ class OperationRunner:
                 if self.real is None:
                     raise AppError(503, 'MODEL_NOT_CONFIGURED', '真实模型执行器未配置')
                 plan = self.real.plan(real_snapshot)
-            for offset in range(0, len(plan['text']), 12):
+            for offset in (range(0, len(plan['text']), 12) if real_snapshot is None else ()):
                 time.sleep(self.delay)
                 with self.factory() as db:
                     session, operation = self._locked(db, operation_id)
@@ -284,6 +289,8 @@ class OperationRunner:
                     raise AppError(409, 'VERSION_CONFLICT', '生成期间会话发生变化')
                 if real_snapshot is not None:
                     self.real.validate_revision(db, real_snapshot, lock=True)
+                    add_event(db, operation, 'text.delta', {'channel': plan['type'], 'text': plan['text']})
+                    db.flush()
                 self.commit_plan(db, session, operation, plan)
                 db.commit()
         except Exception as error:
@@ -302,7 +309,7 @@ class OperationRunner:
                     return
                 operation.status = 'failed'
                 operation.error_code = code
-                operation.finished_at = now()
+                operation.finished_at = db.scalar(select(func.clock_timestamp()))
                 add_event(db, operation, 'operation.failed', {'error_code': code, 'retryable': True})
                 db.commit()
 

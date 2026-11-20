@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ArrowRight, Check } from '@lucide/vue'
 import { useIdentityStore } from '../stores/identity'
 import { returnPath } from '../router/auth'
+import { staggeredEntrance as vStaggeredEntrance } from '../directives/staggeredEntrance'
 
 const route = useRoute()
 const router = useRouter()
@@ -29,7 +30,7 @@ async function submit() {
 </script>
 
 <template>
-  <main class="auth-page">
+  <main :key="route.path" v-staggered-entrance class="auth-page">
     <section class="auth-story" aria-label="TalentGo 面试成长空间">
       <RouterLink to="/login" class="brand" aria-label="TalentGo 登录"><span class="brand-mark">T<span></span></span><span class="brand-word">Talent<span class="brand-light">Go</span><span class="brand-dot">.</span></span></RouterLink>
       <div class="auth-story-copy"><h2>把每一次准备，<br />变成向前的底气。</h2><p>找到你的方向，练习有分量的回答。<br />让成长有迹可循，让下一次机会更近一步。</p><div class="auth-benefits"><span><Check :size="16" />48 个岗位，按目标练习</span><span><Check :size="16" />真实问答，基于证据复盘</span><span><Check :size="16" />独立账号，持续积累进步</span></div></div>

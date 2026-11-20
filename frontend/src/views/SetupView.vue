@@ -21,7 +21,7 @@ let pending: { signature: string; key: string; body: string } | null = null
 const pendingKey = computed(() => `talentgo.create-session.${identity.activeId}`)
 let scope = 0
 const form = reactive({ title: '我的模拟面试', source_task_id: undefined as string | undefined, provider: 'mock' as 'mock' | 'deepseek', role: null as TargetRole | null, mode: null as InterviewMode | null,
-  config: { secondary_roles: [] as string[], question_count: 5, difficulty: 1, max_followups: 1, pressure_level: 1, pressure_consent: false } })
+  config: { secondary_roles: [] as string[], question_count: 5, answer_time_seconds: 120, difficulty: 1, max_followups: 1, pressure_level: 1, pressure_consent: false } })
 watch([() => identity.activeId, () => route.query.mode, () => route.query.task], async () => {
   const ticket = ++scope
   busy.value=false;error.value='';pending=null;uncertain.value=false
@@ -29,7 +29,7 @@ watch([() => identity.activeId, () => route.query.mode, () => route.query.task],
   Object.assign(form,{title:'我的模拟面试',source_task_id:undefined,
     provider:models.value?.default_provider||'mock',role:identity.profile?.target_role||null,
     mode:['technical','behavioral','pressure'].includes(String(selectedMode))?selectedMode:null,
-    config:{secondary_roles:[...(identity.profile?.secondary_roles || [])],question_count:5,difficulty:1,max_followups:1,pressure_level:1,pressure_consent:false}})
+    config:{secondary_roles:[...(identity.profile?.secondary_roles || [])],question_count:5,answer_time_seconds:120,difficulty:1,max_followups:1,pressure_level:1,pressure_consent:false}})
   const token=identity.identity?.token
   if(!token)return
   try {
@@ -111,7 +111,7 @@ async function create() {
           <div class="two-fields"><div><label for="session-mode">面试类型</label><select id="session-mode" v-model="form.mode" :disabled="!!form.source_task_id"><option :value="null">还不确定，先确认</option><option value="technical">技术面试</option><option value="behavioral">行为面试</option><option value="pressure">压力面试</option></select></div></div>
         </div>
         <div class="form-section"><h3>选择目标岗位</h3><p class="field-help">选一个主岗位，也可以添加最多两个次选岗位。次选岗位题量少于主岗位。</p><RolePicker v-model="form.role" v-model:secondary-roles="form.config.secondary_roles" multiple :disabled="!!form.source_task_id || busy || uncertain" /><div v-if="allocation.length" class="role-allocation"><span v-for="item in allocation" :key="item.role">{{ item.primary ? '主岗位' : '次选' }} · {{ roleLabel(item.role) }} <strong>{{ item.question_count }} 题</strong></span></div></div>
-        <div class="form-section"><div class="form-section-label"><span>02</span><h3>控制你的练习节奏</h3></div><div class="two-fields"><div><label for="question-count">总问题数量（1—10）</label><input id="question-count" type="number" v-model.number="form.config.question_count" :min="form.config.secondary_roles?.length ? form.config.secondary_roles.length + 2 : 1" max="10" required /></div><div><label for="followups">每题追问上限</label><select id="followups" v-model.number="form.config.max_followups"><option :value="0">不追问</option><option :value="1">最多 1 次</option><option :value="2">最多 2 次</option></select></div><div><label for="difficulty">起始难度</label><select id="difficulty" v-model.number="form.config.difficulty"><option :value="1">基础</option><option :value="2">进阶</option><option :value="3">深入</option></select></div></div></div>
+        <div class="form-section"><div class="form-section-label"><span>02</span><h3>控制你的练习节奏</h3></div><div class="two-fields"><div><label for="question-count">总问题数量（1—10）</label><input id="question-count" type="number" v-model.number="form.config.question_count" :min="form.config.secondary_roles?.length ? form.config.secondary_roles.length + 2 : 1" max="10" required /></div><div><label for="followups">每题追问上限</label><select id="followups" v-model.number="form.config.max_followups"><option :value="0">不追问</option><option :value="1">最多 1 次</option><option :value="2">最多 2 次</option></select></div><div><label for="difficulty">起始难度</label><select id="difficulty" v-model.number="form.config.difficulty"><option :value="1">基础</option><option :value="2">进阶</option><option :value="3">深入</option></select></div><div><label for="answer-time">每轮答题时间</label><select id="answer-time" v-model.number="form.config.answer_time_seconds"><option :value="60">1 分钟</option><option :value="120">2 分钟</option><option :value="180">3 分钟</option><option :value="300">5 分钟</option><option :value="0">不限时</option></select></div></div><p class="field-help">主问题与追问分别计时，暂停练习会保留剩余时间。</p></div>
         <div v-if="form.mode === 'pressure'" class="form-section"><label for="pressure-level">压力强度</label><select id="pressure-level" v-model.number="form.config.pressure_level"><option :value="1">温和</option><option :value="2">适中</option><option :value="3">较强</option></select><label class="memory-toggle"><input type="checkbox" v-model="form.config.pressure_consent" /><span><strong>我已了解并同意当前强度</strong><small>可以随时降低强度、暂停或结束。训练不作心理评价。</small></span></label></div>
       </fieldset>
       <p v-if="error || uncertain" class="error-banner" role="alert">{{ error || '上次创建结果未确认，请用原请求确认，避免重复建立练习。' }}</p>

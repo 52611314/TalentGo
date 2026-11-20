@@ -3,7 +3,7 @@ from app.core.errors import AppError
 ALLOWED = {
     'clarify': {'clarifying'}, 'clarification': {'clarifying'},
     'start': {'ready'}, 'answer': {'interviewing'}, 'hint': {'interviewing'},
-    'skip': {'interviewing'}, 'pause': {'interviewing'}, 'resume': {'paused'},
+    'skip': {'interviewing'}, 'time_expired': {'interviewing'}, 'pause': {'interviewing'}, 'resume': {'paused'},
     'lower_pressure': {'interviewing', 'paused'}, 'finish': {'interviewing', 'paused'},
     'abort': {'clarifying', 'ready'},
 }

@@ -162,4 +162,4 @@ def test_readiness_fails_for_schema_mismatch(client):
         assert client.get('/api/v1/health/live').status_code == 200
     finally:
         with client.app.state.engine.begin() as db:
-            db.execute(text("UPDATE alembic_version SET version_num='0006_profile_secondary_roles'"))
+            db.execute(text("UPDATE alembic_version SET version_num='0007_question_answer_clock'"))

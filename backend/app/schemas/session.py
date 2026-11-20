@@ -1,6 +1,6 @@
 from typing import Literal
 from uuid import UUID
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 from app.schemas.common import StrictModel
 from app.schemas.profile import Role
 from app.core.roles import validate_selection
@@ -11,10 +11,18 @@ Mode = Literal['technical', 'behavioral', 'pressure']
 class SessionConfig(StrictModel):
     secondary_roles: list[Role] = Field(default_factory=list, max_length=2)
     question_count: int = Field(default=5, ge=1, le=10, strict=True)
+    answer_time_seconds: Literal[0, 60, 120, 180, 300] = 0
     difficulty: int = Field(default=1, ge=1, le=3, strict=True)
     max_followups: int = Field(default=1, ge=0, le=2, strict=True)
     pressure_level: int = Field(default=1, ge=1, le=3, strict=True)
     pressure_consent: bool = Field(default=False, strict=True)
+
+    @field_validator('answer_time_seconds', mode='before')
+    @classmethod
+    def seconds_are_integer(cls, value):
+        if type(value) is not int:
+            raise ValueError('Answer time must be a whole number of seconds')
+        return value
 
 
 class SessionCreate(StrictModel):
@@ -62,5 +70,5 @@ class SessionMessage(StrictModel):
 
 class SessionAction(StrictModel):
     expected_version: int = Field(ge=1, strict=True)
-    action: Literal['clarify', 'start', 'hint', 'skip', 'pause', 'resume', 'lower_pressure', 'finish', 'abort']
+    action: Literal['clarify', 'start', 'hint', 'skip', 'time_expired', 'pause', 'resume', 'lower_pressure', 'finish', 'abort']
     pressure_level: int | None = Field(default=None, ge=1, le=3, strict=True)

@@ -1,4 +1,5 @@
 import uuid
+import time
 from sqlalchemy import func, select
 
 from app.agent.context_builder import answer_hash, build_context, seed_question
@@ -120,13 +121,23 @@ class RealInterviewOrchestrator:
                            'input_cache_hit_tokens': result.input_cache_hit_tokens if result else None,
                            'input_cache_miss_tokens': result.input_cache_miss_tokens if result else None,
                            'latency_ms': result.latency_ms if result else None, 'attempts': result.attempts if result else None}))
+                if result and status == 'succeeded':
+                    operation = db.scalar(select(Operation).where(Operation.id == uuid.UUID(snapshot['operation_id'])).with_for_update())
+                    if operation and operation.attempt_no == snapshot['attempt_no'] and operation.status == 'running':
+                        add_event(db, operation, 'operation.phase_completed', {'phase': phase, 'elapsed_ms': result.latency_ms})
                 db.commit()
 
     def plan(self, snapshot):
         if snapshot['rubric_version'] != RUBRIC_VERSION or snapshot['prompt_version'] != PROMPT_VERSION:
             raise AppError(409, 'VERSION_UNSUPPORTED', '此活动会话的规则版本与当前实现不一致，请新建练习')
         provider = self.provider_factory(snapshot)
-        check = lambda: self.check(snapshot)
+        last_check = float('-inf')
+
+        def check():
+            nonlocal last_check
+            if time.monotonic() - last_check >= .25:
+                self.check(snapshot)
+                last_check = time.monotonic()
         if snapshot['kind'] in {'clarify', 'clarification'}:
             helper = InterviewSkill('clarification', '目标澄清辅助', 'clarification')
             context = {'known_role': snapshot['role'], 'known_mode': snapshot['mode'],
@@ -154,10 +165,10 @@ class RealInterviewOrchestrator:
         new_evaluations = []
         difficulty = current['difficulty'] if current else snapshot['config']['difficulty']
         has_answer = any(m['speaker'] == 'user' and m['kind'] == 'answer' for m in snapshot['thread'])
-        if kind in {'answer', 'finish'} and current and has_answer:
+        if kind in {'answer', 'finish', 'time_expired'} and current and has_answer:
             fingerprint = answer_hash({**current, 'memory_revision': snapshot['memory_revision']}, snapshot['thread'])
             cached = snapshot['latest']
-            if kind == 'finish' and cached and cached['context_hash'] == fingerprint:
+            if kind in {'finish', 'time_expired'} and cached and cached['context_hash'] == fingerprint:
                 evaluated = AnswerEvaluation.model_validate({k: cached[k] for k in ['dimensions', 'missing_points', 'suggestion', 'flag']} | {'followup': None})
             else:
                 evaluated = self.call(snapshot, skill, 'evaluate', lambda: skill.evaluate(provider, context, check), context)

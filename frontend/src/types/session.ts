@@ -4,6 +4,7 @@ export type ExperienceLevel = 'beginner' | 'intern' | 'graduate'
 export interface Profile {
   id: string; user_id: string; target_role: TargetRole | null
   secondary_roles: TargetRole[]
+  answer_time_seconds?: number
   experience_level: ExperienceLevel | null; tech_stack: string[]
   background: string; goals: string; feedback_style: 'concise' | 'detailed' | 'guided'
   allow_inferred_memory: boolean; version: number; memory_revision: number; updated_at: string
@@ -26,9 +27,13 @@ export interface InterviewSession {
   role_plan: RoleAllocation[]
   id: string; title: string; role: TargetRole | null; mode: InterviewMode | null
   status: 'clarifying' | 'ready' | 'interviewing' | 'paused' | 'evaluating' | 'completed' | 'aborted'
-  config: SessionConfig; version: number; is_mock: boolean; created_at: string
+  config: SessionConfig; version: number; is_mock: boolean; created_at: string; server_time?: string
   provider: 'mock' | 'deepseek'; model_name: string | null; rubric_version: string | null; prompt_version: string | null
-  current_question: { id: string; role: TargetRole; ordinal: number; topic: string; content: string; followup_count: number; difficulty: number; hint_used: boolean } | null
+  current_question: {
+    id: string; role: TargetRole; ordinal: number; topic: string; content: string
+    followup_count: number; difficulty: number; hint_used: boolean
+    answer_deadline_at?: string | null; answer_remaining_ms?: number | null
+  } | null
   active_operation_id: string | null; latest_operation: Operation | null; coverage: Coverage
 }
 export interface InterviewMessage {

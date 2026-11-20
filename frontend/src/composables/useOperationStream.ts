@@ -7,6 +7,7 @@ export function useOperationStream() {
   const streamError = ref('')
   const connected = ref(false)
   const phase = ref('')
+  const phaseTimes = ref<Record<string, number>>({})
   let controller: AbortController | null = null
   let epoch = 0
 
@@ -17,6 +18,7 @@ export function useOperationStream() {
     connected.value = false
     partial.value = ''
     phase.value = ''
+    phaseTimes.value = {}
   }
 
   async function attach(operationId: string, token: string, onTerminal: () => Promise<void>) {
@@ -41,7 +43,6 @@ export function useOperationStream() {
         const reader = response.body.getReader()
         const decoder = new TextDecoder()
         let buffer = ''
-        let terminal = false
         while (ticket === epoch) {
           const { value, done } = await reader.read()
           if (done) break
@@ -57,12 +58,12 @@ export function useOperationStream() {
             if (!id || id === lastId || !data || ticket !== epoch) continue
             lastId = id
             const payload = JSON.parse(data)
-            if (event === 'operation.started') partial.value = ''
-            if (event === 'operation.phase') phase.value = ({ clarify: '正在确认训练目标', question: '正在准备问题', evaluate: '正在核对答案与评分证据', review: '正在整理复盘建议', hint: '正在生成提示' } as Record<string, string>)[payload.phase] || '正在处理'
-            if (event === 'text.delta') partial.value += payload.text
-            if (['operation.succeeded', 'operation.failed', 'operation.cancelled'].includes(event || '')) {
-              terminal = true
+            if (event === 'operation.started') { partial.value = ''; phase.value = ''; phaseTimes.value = {} }
+            if (event === 'operation.phase') phase.value = payload.phase
+            if (event === 'operation.phase_completed' && typeof payload.elapsed_ms === 'number') {
+              phaseTimes.value = { ...phaseTimes.value, [payload.phase]: payload.elapsed_ms }
             }
+            if (event === 'text.delta') partial.value += payload.text
           }
         }
         if (ticket !== epoch) return
@@ -87,5 +88,5 @@ export function useOperationStream() {
   }
 
   onBeforeUnmount(stop)
-  return { partial, phase, streamError, connected, attach, stop }
+  return { partial, phase, phaseTimes, streamError, connected, attach, stop }
 }

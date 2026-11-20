@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import RolePicker from '../components/RolePicker.vue'
 import { roleLabel } from '../data/roles'
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft, ArrowRight, Check, CirclePause, CirclePlay, FlaskConical, Lightbulb, RefreshCw, Send, ShieldCheck, SkipForward, Square } from '@lucide/vue'
 import { ApiError, randomKey, request } from '../api/client'
@@ -17,7 +17,7 @@ const router = useRouter()
 const recovery = useSessionRecovery()
 const stream = useOperationStream()
 const { session, messages, loading, error } = recovery
-const { partial, phase, streamError, connected } = stream
+const { partial, phase, phaseTimes, streamError, connected } = stream
 const draft = ref('')
 const sending = ref(false)
 const actionError = ref('')
@@ -31,7 +31,34 @@ const draftKey = computed(() => `talentgo.draft.${identity.activeId}.${sid.value
 const active = computed(() => !!session.value?.active_operation_id)
 const busy = computed(() => sending.value || active.value || loading.value || uncertain.value)
 const failed = computed(() => session.value?.latest_operation && ['failed', 'cancelled'].includes(session.value.latest_operation.status))
-const canAnswer = computed(() => session.value?.status === 'interviewing' && !!session.value.current_question && !busy.value && !failed.value)
+const clockNow = ref(Date.now())
+const clockOffset = ref(0)
+watch(() => session.value?.server_time, timestamp => {
+  if (timestamp) clockOffset.value = Date.parse(timestamp) - Date.now()
+  clockNow.value = Date.now()
+})
+const remainingMs = computed(() => {
+  const question = session.value?.current_question
+  if (question?.answer_remaining_ms != null) return question.answer_remaining_ms
+  return question?.answer_deadline_at
+    ? Math.max(0, Date.parse(question.answer_deadline_at) - clockNow.value - clockOffset.value)
+    : null
+})
+const expired = computed(() => remainingMs.value === 0 && session.value?.status === 'interviewing')
+const timeLabel = computed(() => {
+  const seconds = Math.ceil((remainingMs.value ?? 0) / 1000)
+  return [Math.floor(seconds / 60), seconds % 60].map(value => String(value).padStart(2, '0')).join(':')
+})
+const canAnswer = computed(() => session.value?.status === 'interviewing' && !!session.value.current_question && !busy.value && !failed.value && !expired.value)
+const phaseLabels: Record<string, string> = {
+  clarify: '确认训练目标', evaluate: '评估本题', question: '准备下一题', review: '整理复盘',
+  hint: '准备提示', followup: '准备追问',
+}
+const replyProgress = computed(() => !session.value?.is_mock && ['answer', 'time_expired'].includes(session.value?.latest_operation?.kind ?? ''))
+const nextStage = computed(() => ['review', 'hint', 'followup'].includes(phase.value) ? phase.value : 'question')
+const stageTime = (key: string) => phaseTimes.value[key] === undefined ? '' : ` · ${(phaseTimes.value[key] / 1000).toFixed(1)} 秒`
+let timer: ReturnType<typeof setInterval> | undefined
+onMounted(() => { timer = setInterval(() => { clockNow.value = Date.now() }, 250) })
 
 watch(draft, value => {
   if (identity.identity && sid.value) localStorage.setItem(draftKey.value, value)
@@ -85,7 +112,7 @@ async function perform(path: string, body: Record<string, unknown>, method = 'PO
     if (ticket !== scope) return
     pending.value = null
     uncertain.value = false
-    if (mutation.body.kind === 'answer' || mutation.body.kind === 'clarification') draft.value = ''
+    if (mutation.body.kind === 'answer' || mutation.body.kind === 'clarification' || mutation.body.action === 'time_expired') draft.value = ''
     await refresh()
   } catch (e) {
     if (ticket !== scope) return
@@ -105,6 +132,7 @@ function action(name: string, extra: Record<string, unknown> = {}) {
 }
 function send(content = draft.value) {
   if (!session.value || !content.trim()) return
+  if (session.value.status === 'interviewing' && !canAnswer.value) return
   return perform(`/sessions/${sid.value}/messages`, { expected_version: session.value.version,
     kind: session.value.status === 'clarifying' ? 'clarification' : 'answer', content,
     ...(session.value.status !== 'clarifying' ? { question_id: session.value.current_question?.id } : {}) })
@@ -123,7 +151,7 @@ function confirmPressure() {
   if (session.value) return perform(`/sessions/${sid.value}`, { expected_version: session.value.version,
     config: { ...session.value.config, pressure_consent: true } }, 'PATCH')
 }
-onBeforeUnmount(() => { scope++; stream.stop(); recovery.reset() })
+onBeforeUnmount(() => { clearInterval(timer); scope++; stream.stop(); recovery.reset() })
 </script>
 
 <template>
@@ -140,16 +168,39 @@ onBeforeUnmount(() => { scope++; stream.stop(); recovery.reset() })
           <span class="speaker-label">{{ message.speaker === 'user' ? '你' : message.speaker === 'system' ? '状态记录' : session.is_mock ? 'TalentGo · Mock' : 'TalentGo' }}<small v-if="message.kind === 'followup'">{{ session.is_mock ? '固定追问' : '针对性追问' }}</small><small v-if="message.kind === 'hint'">提示</small></span>
           <p>{{ message.content }}</p>
         </div>
-        <div v-if="active" class="conversation-message assistant temporary"><span class="speaker-label">TalentGo · 生成中 <span class="pulse-dot"></span></span><p>{{ partial || phase || '正在准备下一条完整消息…' }}</p><small>临时内容，成功保存后才成为正式消息</small></div>
+        <div v-if="active" class="conversation-message assistant temporary">
+          <span class="speaker-label">TalentGo · 处理中 <span class="pulse-dot"></span></span>
+          <ol v-if="replyProgress" class="reply-progress">
+            <li :class="{ current: phase === 'evaluate' && phaseTimes.evaluate === undefined, done: phaseTimes.evaluate !== undefined }">
+              <strong>评估本题</strong><span>{{ phaseTimes.evaluate !== undefined ? '已完成' + stageTime('evaluate') : phase === 'evaluate' ? '进行中' : phase ? '沿用已评结果或没有作答' : '等待处理' }}</span>
+            </li>
+            <li :class="{ current: phase === nextStage && phaseTimes[nextStage] === undefined, done: phaseTimes[nextStage] !== undefined }">
+              <strong>{{ phaseLabels[nextStage] }}</strong><span>{{ phaseTimes[nextStage] !== undefined ? '已完成' + stageTime(nextStage) : phase === nextStage ? '进行中' : '等待处理' }}</span>
+            </li>
+          </ol>
+          <p v-else>{{ partial || (phase === 'question' && !session.current_question ? '准备首题' : phaseLabels[phase]) || '等待处理…' }}</p>
+        </div>
         <div v-if="session.status === 'clarifying' && !busy" class="clarification-options"><p>先确认你的方向：</p><RolePicker v-if="!session.role" :model-value="session.role" :disabled="busy" @update:model-value="selectRole" /><div v-if="!session.mode"><button @click="send('技术')">技术面试</button><button @click="send('行为')">行为面试</button><button @click="send('压力')">压力面试</button></div><button v-if="!messages.length" class="text-link" @click="action('clarify')">帮我确认需要补充什么</button></div>
         <div v-if="session.status === 'ready'" class="ready-panel"><Check :size="23" /><h2>目标已经确认，准备好了吗？</h2><p>共 {{ session.config.question_count }} 个主问题，每题最多追问 {{ session.config.max_followups }} 次。</p><div v-if="session.mode === 'pressure' && !session.config.pressure_consent" class="pressure-consent"><p>压力模式需要你确认强度。可随时降低、暂停或结束。</p><button class="button primary" :disabled="busy" @click="confirmPressure">同意当前强度并保存</button></div><button v-else class="button primary" :disabled="busy" @click="action('start')"><CirclePlay :size="17" />开始面试</button></div>
-        <div v-if="session.status === 'paused'" class="ready-panel"><CirclePause :size="24" /><h2>休息一下，再继续。</h2><p>已保存的回答和问题会保留。</p><button class="button primary" :disabled="busy" @click="action('resume')">恢复练习</button></div>
+        <div v-if="session.status === 'paused'" class="ready-panel"><CirclePause :size="24" /><h2>休息一下，再继续。</h2><p>已保存的回答和问题会保留。<template v-if="remainingMs !== null">本轮剩余 {{ timeLabel }}。</template></p><button class="button primary" :disabled="busy" @click="action('resume')">恢复练习</button></div>
         <p v-if="session.status === 'aborted'" class="mock-notice">本次配置已取消，没有生成训练成绩。<RouterLink to="/practice">重新配置</RouterLink></p>
       </div>
       <div v-if="failed" class="operation-warning" role="status"><strong>{{ session.latest_operation?.status === 'cancelled' ? '本次生成已停止' : '本次生成未完成' }}</strong><p>已保存的输入保留。重试原操作不会重复保存答案。{{ session.latest_operation?.error_code }}</p><button class="button secondary" :disabled="busy" @click="control('retry')"><RefreshCw :size="14" />重试原操作</button></div>
       <p v-if="actionError || streamError" class="error-banner" role="alert">{{ actionError || streamError }}<button @click="refresh()">刷新状态</button></p>
       <div v-if="uncertain" class="operation-warning"><strong>上次请求的结果尚未确认</strong><p>请使用原请求键重试，不要重新输入同一条答案。</p><button class="button secondary" :disabled="sending" @click="pending && perform(pending.path, pending.body, pending.method, true)">确认上次提交</button></div>
-      <form v-if="['interviewing', 'clarifying'].includes(session.status)" class="answer-composer" @submit.prevent="send()"><label for="interview-answer">{{ session.status === 'clarifying' ? '补充你的目标' : '你的回答' }}</label><textarea id="interview-answer" v-model="draft" maxlength="8000" rows="4" :disabled="session.status === 'clarifying' ? busy : !canAnswer" placeholder="先说结论，再补充理由与例子。不确定的部分可以如实说明。"></textarea><div><small>{{ draft.length }} / 8000 · 草稿仅保存在当前浏览器</small><button class="button primary" :disabled="!draft.trim() || (session.status === 'clarifying' ? busy : !canAnswer)"><Send :size="15" />提交回答</button></div></form>
+      <form v-if="['interviewing', 'clarifying'].includes(session.status)" class="answer-composer" @submit.prevent="send()">
+        <label for="interview-answer">{{ session.status === 'clarifying' ? '补充你的目标' : '你的回答' }}</label>
+        <div v-if="session.status === 'interviewing' && remainingMs !== null && !active" class="answer-clock" :class="{ expired }">
+          <span v-if="expired" role="status">本轮时间已到。未提交的草稿不计分。</span>
+          <span v-else>本轮剩余 <strong role="timer">{{ timeLabel }}</strong></span>
+        </div>
+        <textarea id="interview-answer" v-model="draft" maxlength="8000" rows="4" :disabled="session.status === 'clarifying' ? busy : !canAnswer" placeholder="先说结论，再补充理由与例子。不确定的部分可以如实说明。"></textarea>
+        <div>
+          <small>{{ draft.length }} / 8000 · 草稿仅保存在当前浏览器</small>
+          <button v-if="expired" type="button" class="button primary" :disabled="busy" @click="action('time_expired')">结束本题 <ArrowRight :size="15" /></button>
+          <button v-else class="button primary" :disabled="!draft.trim() || (session.status === 'clarifying' ? busy : !canAnswer)"><Send :size="15" />提交回答</button>
+        </div>
+      </form>
     </section>
     <aside class="interview-aside"><section class="card progress-card"><div class="eyebrow">ONE STEP AT A TIME</div><h3>这次练习</h3><div class="role-allocation"><span v-for="item in session.role_plan" :key="item.role">{{ item.primary ? '主岗位' : '次选' }} · {{ roleLabel(item.role) }} <strong>{{ item.question_count }} 题</strong></span></div><div class="question-counter"><strong>{{ session.current_question?.ordinal || 0 }}</strong><span>/ {{ session.config.question_count }} 题</span></div><div class="progress-track"><span :style="{ width: `${session.coverage.asked / session.config.question_count * 100}%` }"></span></div><dl><div><dt>当前岗位</dt><dd>{{ roleLabel(session.current_question?.role || session.role) }}</dd></div><div><dt>当前主题</dt><dd>{{ session.current_question?.topic || '等待开始' }}</dd></div><div><dt>实际作答</dt><dd>{{ session.coverage.answered }} 题</dd></div><div><dt>本题追问</dt><dd>{{ session.current_question?.followup_count || 0 }} / {{ session.config.max_followups }}</dd></div></dl><p class="field-help">{{ session.is_mock ? '短于 50 字可能触发演示追问，不判断回答优劣。' : '评分由五个维度构成，证据与缺口将在报告中展示。本题用过提示时会单独标记。' }}</p></section>
       <section class="card session-controls"><h3>练习控制</h3><template v-if="active"><p>{{ session.latest_operation?.cancel_requested ? '正在确认停止，请稍候…' : connected ? '正在接收生成进度' : '正在连接操作事件' }}</p><button class="button secondary full" :disabled="sending || session.latest_operation?.cancel_requested" @click="control('cancel')"><Square :size="14" />停止生成</button></template><template v-else><button v-if="session.status === 'interviewing'" :disabled="busy || !session.current_question || session.current_question.hint_used" @click="action('hint')"><Lightbulb :size="16" />给我提示</button><button v-if="session.status === 'interviewing'" :disabled="busy || !session.current_question" @click="action('skip')"><SkipForward :size="16" />跳过本题</button><button v-if="session.status === 'interviewing'" :disabled="busy" @click="action('pause')"><CirclePause :size="16" />暂停练习</button><button v-if="session.mode === 'pressure' && session.config.pressure_level > 1 && ['interviewing','paused'].includes(session.status)" :disabled="busy" @click="action('lower_pressure', { pressure_level: 1 })">降低压力强度</button><button v-if="['interviewing','paused'].includes(session.status)" :disabled="busy" @click="finish">结束并整理总结 <ArrowRight :size="15" /></button><button v-if="['clarifying','ready'].includes(session.status)" :disabled="busy" @click="action('abort')">取消本次配置</button></template></section>

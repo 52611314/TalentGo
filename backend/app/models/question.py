@@ -1,5 +1,6 @@
 import uuid
-from sqlalchemy import Boolean, CheckConstraint, ForeignKey, Integer, String, Text, UniqueConstraint, text
+from datetime import datetime
+from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 from app.db.base import Base, IdentityMixin
@@ -22,3 +23,5 @@ class Question(IdentityMixin, Base):
     hint_used: Mapped[bool] = mapped_column(Boolean, default=False, server_default=text('false'))
     source_key: Mapped[str | None] = mapped_column(String(120))
     rubric_snapshot: Mapped[dict] = mapped_column(JSONB, default=dict, server_default=text("'{}'::jsonb"))
+    answer_deadline_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    answer_remaining_ms: Mapped[int | None] = mapped_column(Integer)

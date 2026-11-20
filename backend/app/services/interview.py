@@ -10,6 +10,7 @@ from app.core.errors import AppError
 from app.core.roles import role_plan, validate_selection
 from app.models import Evaluation, InterviewSession, Message, Operation, OperationEvent, Profile, Question, Report, SkillRun
 from app.schemas.profile import ProfileRead
+from app.services.answer_clock import pause_turn, resume_turn, turn_expired
 from app.services.idempotency import begin_request, save_receipt
 
 
@@ -82,11 +83,14 @@ def session_data(db, session):
             'status': session.status, 'config': session.config, 'version': session.version,
             'is_mock': session.provider == 'mock', 'provider': session.provider, 'model_name': session.model_name,
             'rubric_version': session.rubric_version, 'prompt_version': session.prompt_version,
-            'created_at': session.created_at.isoformat(), 'source_task_id': str(session.source_task_id) if session.source_task_id else None,
+            'created_at': session.created_at.isoformat(), 'server_time': now().isoformat(),
+            'source_task_id': str(session.source_task_id) if session.source_task_id else None,
             'current_question': {'id': str(question.id), 'ordinal': question.ordinal, 'topic': question.topic,
                                  'role': question.rubric_snapshot.get('target_role', session.role),
                                  'content': question.content, 'followup_count': question.followup_count,
-                                 'hint_used': question.hint_used, 'difficulty': question.difficulty} if question else None,
+                                 'hint_used': question.hint_used, 'difficulty': question.difficulty,
+                                 'answer_deadline_at': question.answer_deadline_at.isoformat() if question.answer_deadline_at else None,
+                                 'answer_remaining_ms': question.answer_remaining_ms} if question else None,
             'active_operation_id': str(latest.id) if latest and latest.status in ACTIVE else None,
             'latest_operation': operation_data(db, latest) if latest else None, 'coverage': coverage(db, session)}
 
@@ -112,6 +116,8 @@ def append_message(db, session_id, speaker, kind, content, question_id=None, ope
 
 def create_session(db, user_id, body, key, settings=None):
     payload = body.model_dump(mode='json')
+    if 'answer_time_seconds' not in body.config.model_fields_set:
+        payload['config'].pop('answer_time_seconds')
     receipt, key_hash, digest = begin_request(db, user_id, key, 'POST', '/api/v1/sessions', payload)
     if receipt:
         return receipt.response_data
@@ -147,7 +153,12 @@ def patch_session(db, user_id, session_id, body, key):
         raise AppError(409, 'INVALID_STATE', '开始后不能改写本次面试配置')
     for field, value in payload.items():
         if field != 'expected_version':
-            setattr(session, field, body.config.model_dump() if field == 'config' else value)
+            if field == 'config':
+                config = body.config.model_dump()
+                config['answer_time_seconds'] = value.get('answer_time_seconds', session.config.get('answer_time_seconds', 0))
+                session.config = config
+            else:
+                setattr(session, field, value)
     session.status = configuration_state(session.role, session.mode)
     try:
         validate_selection(session.role, session.config)
@@ -186,7 +197,9 @@ def submit(db, user_id, session_id, body, key, is_message=False):
             raise AppError(409, 'PRESSURE_CONSENT_REQUIRED', '请先确认压力训练强度与退出方式')
         profile = db.scalar(select(Profile).where(Profile.user_id == user_id))
         session.profile_snapshot = ProfileRead.model_validate(profile).model_dump(mode='json')
-    if action in {'answer', 'hint', 'skip'}:
+    question = db.get(Question, session.current_question_id) if session.current_question_id else None
+    timestamp = now()
+    if action in {'answer', 'hint', 'skip', 'time_expired'}:
         if session.current_question_id is None:
             raise AppError(409, 'INVALID_STATE', '尚无可回答的问题，请重试首题生成')
         if is_message and str(body.question_id) != str(session.current_question_id):
@@ -196,7 +209,12 @@ def submit(db, user_id, session_id, body, key, is_message=False):
             Operation.request_payload['question_id'].astext == str(session.current_question_id)).limit(1))
         if action == 'answer' and unresolved:
             raise AppError(409, 'OPERATION_RETRY_REQUIRED', '原答案已保存，请重试原操作，不要再次提交答案')
-        if action == 'hint' and (db.get(Question, session.current_question_id).hint_used or db.scalar(select(Message.id).where(Message.question_id == session.current_question_id, Message.kind == 'hint').limit(1))):
+        expired = turn_expired(question, timestamp)
+        if action in {'answer', 'hint'} and expired:
+            raise AppError(409, 'ANSWER_TIME_EXPIRED', '本轮答题时间已到，请结束本题或结束练习')
+        if action == 'time_expired' and not expired:
+            raise AppError(409, 'ANSWER_TIME_REMAINING', '当前答题时间尚未用完')
+        if action == 'hint' and (question.hint_used or db.scalar(select(Message.id).where(Message.question_id == session.current_question_id, Message.kind == 'hint').limit(1))):
             raise AppError(409, 'HINT_ALREADY_USED', '本题已经提供过提示')
     if action in {'pause', 'resume', 'abort', 'lower_pressure'}:
         if action == 'abort' and session.source_task_id:
@@ -208,6 +226,10 @@ def submit(db, user_id, session_id, body, key, is_message=False):
             session.config = {**session.config, 'pressure_level': body.pressure_level}
         else:
             session.status = {'pause': 'paused', 'resume': 'interviewing', 'abort': 'aborted'}[action]
+            if question and action == 'pause':
+                pause_turn(question, timestamp)
+            elif question and action == 'resume':
+                resume_turn(question, timestamp)
         session.version += 1
         append_message(db, session.id, 'system', 'notice', {'pause': '面试已暂停。', 'resume': '面试已恢复。',
                        'abort': '本次配置已取消。', 'lower_pressure': '压力强度已降低。'}[action])
